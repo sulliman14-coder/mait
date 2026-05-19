@@ -1,315 +1,266 @@
-<!DOCTYPE html>
 
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>MTC | نظام المبيعات الذكي الشامل</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTC | نظام المبيعات الذكي - النسخة الحقيقية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-:root{
-  --navy:#0a1a33;--navy-mid:#13284d;--navy-light:#1d3a6b;
-  --gold:#caa84d;--gold-light:#e6c970;--gold-dim:rgba(202,168,77,.14);
-  --cyan:#00cfff;--green:#00e082;--red:#ff5b6e;--orange:#ff9a3c;--purple:#b07cff;
-  --text:#eaedf7;--text-dim:#8295bb;
-  --card:rgba(19,40,77,.65);--border:rgba(202,168,77,.22);--radius:14px;
+:root {
+  --navy:#0a1a33; --navy-mid:#13284d; --navy-light:#1d3a6b;
+  --gold:#caa84d; --gold-light:#e6c970; --gold-dim:rgba(202,168,77,.14);
+  --cyan:#00cfff; --green:#00e082; --red:#ff5b6e; --orange:#ff9a3c;
+  --text:#eaedf7; --text-dim:#8295bb;
+  --card:rgba(19,40,77,.65); --border:rgba(202,168,77,.22);
+  --radius:14px;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{font-size:16px}
+*{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(ellipse 55% 40% at 8% 15%,rgba(0,180,255,.06) 0%,transparent 65%),
   radial-gradient(ellipse 50% 50% at 92% 85%,rgba(202,168,77,.08) 0%,transparent 65%)}
 
-.topbar{position:sticky;top:0;z-index:100;background:rgba(10,26,51,.97);backdrop-filter:blur(20px);
-border-bottom:1px solid var(–border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;gap:10px}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand-logo{width:38px;height:38px;background:linear-gradient(135deg,var(–navy-light),var(–navy-mid));
-border:1.5px solid var(–gold);border-radius:10px;display:flex;align-items:center;justify-content:center;
-font-weight:900;font-size:12px;color:var(–gold);letter-spacing:1px;flex-shrink:0}
-.brand-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand-name span{color:var(–gold)}
-.topbar-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.menu-toggle{display:none;background:var(–card);border:1px solid var(–border);color:var(–gold);
-width:38px;height:38px;border-radius:9px;font-size:18px;cursor:pointer}
-.api-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(–text-dim);
-background:var(–card);border:1px solid var(–border);padding:6px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,26,51,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);padding:0 26px;display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:40px;height:40px;background:linear-gradient(135deg,var(--navy-light),var(--navy-mid));
+  border:1.5px solid var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:13px;color:var(--gold);letter-spacing:1px}
+.brand-name{font-size:15px;font-weight:700}
+.brand-name span{color:var(--gold)}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.api-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);
+  background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:8px;cursor:pointer}
 .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.status-dot.on{background:var(–green);box-shadow:0 0 6px var(–green)}
-.status-dot.off{background:var(–red)}
-.btn-primary{background:linear-gradient(135deg,var(–gold),var(–gold-light));color:var(–navy);
-border:none;border-radius:10px;padding:9px 16px;font-family:‘Cairo’;font-weight:700;font-size:13px;
-cursor:pointer;transition:all .2s;white-space:nowrap}
+.status-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.off{background:var(--red)}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);
+  border:none;border-radius:10px;padding:9px 18px;font-family:'Cairo';font-weight:700;font-size:13px;
+  cursor:pointer;transition:all .2s;white-space:nowrap}
 .btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(202,168,77,.3)}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
+/* LAYOUT */
 .layout{display:flex;position:relative;z-index:1}
-.sidebar{width:218px;min-height:calc(100vh - 60px);background:rgba(10,26,51,.6);
-border-left:1px solid var(–border);padding:18px 11px;position:sticky;top:60px;align-self:flex-start;flex-shrink:0;transition:transform .3s}
-.nav-title{font-size:10px;color:var(–text-dim);letter-spacing:1.5px;padding:0 8px;margin:15px 0 6px;text-transform:uppercase}
-.nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;
-transition:all .2s;font-size:13px;font-weight:500;margin-bottom:2px;color:var(–text-dim)}
-.nav-item:hover{background:var(–gold-dim);color:var(–text)}
-.nav-item.active{background:var(–gold-dim);color:var(–gold);border:1px solid var(–border)}
+.sidebar{width:218px;min-height:calc(100vh - 62px);background:rgba(10,26,51,.6);
+  border-left:1px solid var(--border);padding:18px 11px;position:sticky;top:62px;align-self:flex-start;flex-shrink:0}
+.nav-title{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;padding:0 8px;margin:15px 0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;
+  transition:all .2s;font-size:13px;font-weight:500;margin-bottom:2px;color:var(--text-dim)}
+.nav-item:hover{background:var(--gold-dim);color:var(--text)}
+.nav-item.active{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
 .nav-item .icon{font-size:16px;width:20px;text-align:center}
-.nav-badge{margin-right:auto;background:var(–gold);color:var(–navy);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700}
-.nav-badge.red{background:var(–red);color:#fff}
-.main{flex:1;padding:24px;max-width:calc(100% - 218px);min-width:0}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
+.nav-badge{margin-right:auto;background:var(--gold);color:var(--navy);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700}
+.nav-badge.red{background:var(--red);color:#fff}
+.main{flex:1;padding:26px;max-width:calc(100% - 218px)}
 
+/* PAGES */
 .page{display:none}.page.active{display:block;animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.page-header{margin-bottom:20px}
-.page-title{font-size:20px;font-weight:800}.page-title span{color:var(–gold)}
-.page-sub{font-size:13px;color:var(–text-dim);margin-top:4px;line-height:1.6}
+.page-header{margin-bottom:22px}
+.page-title{font-size:21px;font-weight:800}.page-title span{color:var(--gold)}
+.page-sub{font-size:13px;color:var(--text-dim);margin-top:4px}
 
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.stat-card{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);
-padding:16px 18px;position:relative;overflow:hidden}
-.stat-card::before{content:’’;position:absolute;top:0;right:0;width:56px;height:56px;background:var(–gold-dim);border-radius:0 0 0 56px}
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:56px;height:56px;
+  background:var(--gold-dim);border-radius:0 0 0 56px}
 .stat-icon{font-size:20px;margin-bottom:6px}
-.stat-val{font-size:24px;font-weight:800;color:var(–gold)}
-.stat-label{font-size:12px;color:var(–text-dim);margin-top:2px}
+.stat-val{font-size:25px;font-weight:800;color:var(--gold)}
+.stat-label{font-size:12px;color:var(--text-dim);margin-top:2px}
+.stat-delta{font-size:11px;margin-top:5px}
+.stat-delta.up{color:var(--green)}
 
-.card{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);padding:20px;margin-bottom:18px}
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-.card-title{font-size:15px;font-weight:700}.card-title span{color:var(–gold)}
+.card-title{font-size:15px;font-weight:700}.card-title span{color:var(--gold)}
 
+/* FORMS */
 .form-group{margin-bottom:14px}
-.form-group label{font-size:12px;color:var(–text-dim);display:block;margin-bottom:6px;font-weight:600}
+.form-group label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;font-weight:600}
 .form-input,.form-select,.form-textarea{width:100%;background:rgba(10,26,51,.85);
-border:1px solid var(–border);border-radius:9px;color:var(–text);font-family:‘Cairo’;
-padding:11px 13px;font-size:13px;transition:border-color .2s}
-.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(–gold)}
-.form-select option{background:var(–navy)}
+  border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Cairo';
+  padding:10px 13px;font-size:13px;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--gold)}
+.form-select option{background:var(--navy)}
 .form-textarea{resize:vertical;min-height:80px}
+.search-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
 
+/* TABLE */
 .leads-table{width:100%;border-collapse:collapse}
-.leads-table th{text-align:right;font-size:11px;color:var(–text-dim);padding:8px 11px;
-border-bottom:1px solid var(–border);letter-spacing:.5px;white-space:nowrap}
+.leads-table th{text-align:right;font-size:11px;color:var(--text-dim);padding:8px 11px;
+  border-bottom:1px solid var(--border);letter-spacing:.5px;white-space:nowrap}
 .leads-table td{padding:11px;font-size:13px;border-bottom:1px solid rgba(202,168,77,.08);vertical-align:middle}
 .leads-table tr:hover td{background:rgba(202,168,77,.04)}
-.score-bar{display:flex;align-items:center;gap:8px;min-width:100px}
+.score-bar{display:flex;align-items:center;gap:8px;min-width:110px}
 .score-fill{flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
 .score-fill-inner{height:100%;border-radius:3px;transition:width .4s}
 .score-text{font-size:11px;font-weight:700;min-width:28px}
-.score-high .score-fill-inner{background:var(–green)}.score-high .score-text{color:var(–green)}
-.score-mid .score-fill-inner{background:var(–gold)}.score-mid .score-text{color:var(–gold)}
-.score-low .score-fill-inner{background:var(–orange)}.score-low .score-text{color:var(–orange)}
+.score-high .score-fill-inner{background:var(--green)}.score-high .score-text{color:var(--green)}
+.score-mid .score-fill-inner{background:var(--gold)}.score-mid .score-text{color:var(--gold)}
+.score-low .score-fill-inner{background:var(--orange)}.score-low .score-text{color:var(--orange)}
 .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.tag-pending{background:rgba(255,154,60,.15);color:var(–orange)}
-.tag-sent{background:rgba(0,207,255,.15);color:var(–cyan)}
-.tag-opened{background:rgba(202,168,77,.2);color:var(–gold)}
-.tag-replied{background:rgba(0,224,130,.2);color:var(–green)}
-.tag-cold{background:rgba(255,91,110,.15);color:var(–red)}
-.tag-real{background:rgba(0,224,130,.15);color:var(–green)}
-.tag-demo{background:rgba(130,149,187,.15);color:var(–text-dim)}
+.tag-pending{background:rgba(255,154,60,.15);color:var(--orange)}
+.tag-sent{background:rgba(0,207,255,.15);color:var(--cyan)}
+.tag-opened{background:rgba(202,168,77,.2);color:var(--gold)}
+.tag-replied{background:rgba(0,224,130,.2);color:var(--green)}
+.tag-cold{background:rgba(255,91,110,.15);color:var(--red)}
+.tag-real{background:rgba(0,224,130,.15);color:var(--green)}
+.tag-demo{background:rgba(130,149,187,.15);color:var(--text-dim)}
 
-.action-btns{display:flex;gap:6px;flex-wrap:wrap}
-.btn-sm{padding:6px 11px;border-radius:7px;font-size:12px;font-family:‘Cairo’;font-weight:600;cursor:pointer;border:none;transition:all .2s}
-.btn-view{background:var(–gold-dim);color:var(–gold);border:1px solid var(–border)}
-.btn-view:hover{background:var(–gold);color:var(–navy)}
-.btn-send{background:rgba(0,207,255,.1);color:var(–cyan);border:1px solid rgba(0,207,255,.2)}
+.action-btns{display:flex;gap:6px}
+.btn-sm{padding:5px 10px;border-radius:7px;font-size:12px;font-family:'Cairo';font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-view{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.btn-view:hover{background:var(--gold);color:var(--navy)}
+.btn-send{background:rgba(0,207,255,.1);color:var(--cyan);border:1px solid rgba(0,207,255,.2)}
 .btn-send:hover{background:rgba(0,207,255,.25)}
 .btn-wa{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.2)}
 .btn-wa:hover{background:rgba(37,211,102,.25)}
-.btn-danger{background:rgba(255,91,110,.1);color:var(–red);border:1px solid rgba(255,91,110,.2)}
+.btn-danger{background:rgba(255,91,110,.1);color:var(--red);border:1px solid rgba(255,91,110,.2)}
 .btn-danger:hover{background:rgba(255,91,110,.2)}
-.btn-outline{background:transparent;border:1px solid var(–border);color:var(–text-dim);
-border-radius:9px;padding:9px 15px;font-family:‘Cairo’;font-size:13px;cursor:pointer;transition:all .2s}
-.btn-outline:hover{border-color:var(–gold);color:var(–gold)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);
+  border-radius:9px;padding:8px 15px;font-family:'Cairo';font-size:13px;cursor:pointer;transition:all .2s}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 
-.checkbox-custom{width:18px;height:18px;border:1.5px solid var(–border);border-radius:4px;
-cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px}
-.checkbox-custom.checked{background:var(–gold);border-color:var(–gold);color:var(–navy)}
+.checkbox-custom{width:16px;height:16px;border:1.5px solid var(--border);border-radius:4px;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px}
+.checkbox-custom.checked{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 
+/* AI LOADER */
 .ai-loader{display:none;align-items:center;gap:12px;padding:15px 18px;border-radius:11px;
-background:rgba(0,207,255,.05);border:1px solid rgba(0,207,255,.2);margin-bottom:15px}
+  background:rgba(0,207,255,.05);border:1px solid rgba(0,207,255,.2);margin-bottom:15px}
 .ai-loader.active{display:flex}
 .loader-dots{display:flex;gap:4px}
-.loader-dots span{width:7px;height:7px;border-radius:50%;background:var(–cyan);animation:bounce 1.2s infinite}
-.loader-dots span:nth-child(2){animation-delay:.2s}.loader-dots span:nth-child(3){animation-delay:.4s}
+.loader-dots span{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:bounce 1.2s infinite}
+.loader-dots span:nth-child(2){animation-delay:.2s}
+.loader-dots span:nth-child(3){animation-delay:.4s}
 @keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
 .progress-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin:8px 0}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(–cyan),var(–gold));border-radius:2px;transition:width .8s ease}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--gold));border-radius:2px;transition:width .8s ease}
 
+/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.72);
-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px}
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
-.modal{background:var(–navy-mid);border:1px solid var(–border);border-radius:18px;padding:24px;
-max-width:680px;width:100%;max-height:88vh;overflow-y:auto;position:relative;animation:fadeUp .3s ease}
+.modal{background:var(--navy-mid);border:1px solid var(--border);border-radius:18px;padding:26px;
+  max-width:680px;width:100%;max-height:86vh;overflow-y:auto;position:relative;animation:fadeUp .3s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.modal-close{position:absolute;top:14px;left:14px;width:34px;height:34px;border-radius:8px;
-background:rgba(255,91,110,.1);color:var(–red);border:1px solid rgba(255,91,110,.2);cursor:pointer;
-display:flex;align-items:center;justify-content:center;font-size:16px}
+.modal-close{position:absolute;top:16px;left:16px;width:32px;height:32px;border-radius:8px;
+  background:rgba(255,91,110,.1);color:var(--red);border:1px solid rgba(255,91,110,.2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
 .modal-close:hover{background:rgba(255,91,110,.25)}
-.modal-title{font-size:17px;font-weight:700;margin-bottom:18px}.modal-title span{color:var(–gold)}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:18px}.modal-title span{color:var(--gold)}
 
-.msg-preview{background:rgba(10,26,51,.9);border:1px solid var(–border);border-radius:10px;
-padding:16px;font-size:13px;line-height:1.85;min-height:150px;white-space:pre-wrap}
+.msg-preview{background:rgba(10,26,51,.9);border:1px solid var(--border);border-radius:10px;
+  padding:16px;font-size:13px;line-height:1.85;min-height:150px;white-space:pre-wrap}
 .msg-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
 
-.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.filter-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-family:‘Cairo’;font-weight:600;
-cursor:pointer;border:1px solid var(–border);background:transparent;color:var(–text-dim);transition:all .2s}
-.filter-btn:hover,.filter-btn.active{background:var(–gold-dim);color:var(–gold);border-color:var(–gold)}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:7px 15px;border-radius:20px;font-size:12px;font-family:'Cairo';font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+.filter-btn:hover,.filter-btn.active{background:var(--gold-dim);color:var(--gold);border-color:var(--gold)}
 
-.att-chip{display:inline-flex;align-items:center;gap:8px;background:var(–gold-dim);
-border:1px solid var(–border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(–gold);margin:4px}
+.att-chip{display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);
+  border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--gold);margin:4px;cursor:default}
 
-.empty-state{text-align:center;padding:50px 20px;color:var(–text-dim)}
-.empty-state .icon{font-size:44px;margin-bottom:12px;opacity:.5}
+.empty-state{text-align:center;padding:54px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:46px;margin-bottom:12px;opacity:.5}
 .empty-state p{font-size:14px}
 
-.send-progress{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);
-padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
-.sp-icon{font-size:18px;flex-shrink:0}.sp-info{flex:1;min-width:0}
-.sp-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-sub{font-size:11px;color:var(–text-dim);margin-top:2px;direction:ltr;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.send-progress{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.sp-icon{font-size:19px}.sp-info{flex:1}
+.sp-title{font-size:13px;font-weight:600}
+.sp-sub{font-size:11px;color:var(--text-dim);margin-top:2px;direction:ltr;text-align:right}
 
-.inbox-item{display:flex;gap:12px;align-items:flex-start;padding:13px 0;
-border-bottom:1px solid rgba(202,168,77,.08);cursor:pointer;transition:all .2s}
+.inbox-item{display:flex;gap:13px;align-items:flex-start;padding:13px 0;
+  border-bottom:1px solid rgba(202,168,77,.08);cursor:pointer;transition:all .2s}
 .inbox-item:hover{padding-right:5px}
-.inbox-avatar{width:38px;height:38px;border-radius:11px;background:var(–navy-light);
-border:1px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.inbox-avatar{width:40px;height:40px;border-radius:11px;background:var(--navy-light);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .inbox-meta{flex:1;min-width:0}
 .inbox-sender{font-size:13px;font-weight:700}
-.inbox-preview{font-size:12px;color:var(–text-dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.inbox-time{font-size:11px;color:var(–text-dim);flex-shrink:0}
-.inbox-item.unread .inbox-sender{color:var(–gold)}
-.inbox-item.unread .inbox-avatar{border-color:var(–gold)}
+.inbox-preview{font-size:12px;color:var(--text-dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-time{font-size:11px;color:var(--text-dim);flex-shrink:0}
+.inbox-item.unread .inbox-sender{color:var(--gold)}
+.inbox-item.unread .inbox-avatar{border-color:var(--gold)}
 
-.schedule-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(202,168,77,.08)}
-.schedule-time{background:var(–gold-dim);border:1px solid var(–border);border-radius:8px;
-padding:6px 12px;font-size:12px;color:var(–gold);font-weight:700;min-width:90px;text-align:center;flex-shrink:0}
-.schedule-info{flex:1;min-width:0}.schedule-title{font-size:13px;font-weight:600}
-.schedule-sub{font-size:12px;color:var(–text-dim);margin-top:2px;line-height:1.5}
+.schedule-item{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid rgba(202,168,77,.08)}
+.schedule-time{background:var(--gold-dim);border:1px solid var(--border);border-radius:8px;
+  padding:6px 12px;font-size:12px;color:var(--gold);font-weight:700;min-width:95px;text-align:center}
+.schedule-info{flex:1}.schedule-title{font-size:13px;font-weight:600}
+.schedule-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
 
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .chart-container{height:200px;position:relative}
 
 .info-box{border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;line-height:1.7}
 .info-cyan{background:rgba(0,207,255,.05);border:1px solid rgba(0,207,255,.2)}
-.info-cyan .ib-title{color:var(–cyan);font-weight:700;margin-bottom:6px}
+.info-cyan .ib-title{color:var(--cyan);font-weight:700;margin-bottom:6px;font-size:12px}
 .info-green{background:rgba(0,224,130,.05);border:1px solid rgba(0,224,130,.18)}
-.info-green .ib-title{color:var(–green);font-weight:700;margin-bottom:6px}
-.info-gold{background:rgba(202,168,77,.05);border:1px solid var(–border)}
-.info-gold .ib-title{color:var(–gold);font-weight:700;margin-bottom:6px}
-.info-red{background:rgba(255,91,110,.05);border:1px solid rgba(255,91,110,.2)}
-.info-red .ib-title{color:var(–red);font-weight:700;margin-bottom:6px}
+.info-green .ib-title{color:var(--green);font-weight:700;margin-bottom:6px}
+.info-gold{background:rgba(202,168,77,.05);border:1px solid var(--border)}
+.info-gold .ib-title{color:var(--gold);font-weight:700;margin-bottom:6px}
 
-.code-block{background:#060f1f;border:1px solid var(–border);border-radius:10px;padding:16px;
-font-family:‘Courier New’,monospace;font-size:12px;line-height:1.7;color:#9fd9ff;
-direction:ltr;text-align:left;overflow-x:auto;white-space:pre;margin:10px 0}
-.copy-code-btn{background:var(–gold-dim);color:var(–gold);border:1px solid var(–border);
-border-radius:6px;padding:5px 12px;font-size:11px;font-family:‘Cairo’;cursor:pointer;font-weight:600}
+.code-block{background:#060f1f;border:1px solid var(--border);border-radius:10px;padding:16px;
+  font-family:'Courier New',monospace;font-size:12px;line-height:1.7;color:#9fd9ff;
+  direction:ltr;text-align:left;overflow-x:auto;white-space:pre;margin:10px 0}
+.copy-code-btn{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);
+  border-radius:6px;padding:4px 12px;font-size:11px;font-family:'Cairo';cursor:pointer;font-weight:600}
 
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  background:var(--gold);color:var(--navy);border-radius:50%;font-weight:800;font-size:12px;margin-left:8px}
 .step{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid rgba(202,168,77,.08)}
-.step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
-background:var(–gold);color:var(–navy);border-radius:50%;font-weight:800;font-size:12px;flex-shrink:0}
-.step-content{flex:1}.step-content h4{font-size:14px;font-weight:700;margin-bottom:5px}
-.step-content p{font-size:12px;color:var(–text-dim);line-height:1.8}
-.step-content code{background:rgba(202,168,77,.12);color:var(–gold);padding:1px 6px;border-radius:4px;font-size:11px}
+.step-content{flex:1}
+.step-content h4{font-size:14px;font-weight:700;margin-bottom:5px}
+.step-content p{font-size:12px;color:var(--text-dim);line-height:1.7}
 
-.toggle-switch{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle-switch{position:relative;width:44px;height:24px;cursor:pointer}
 .toggle-switch input{display:none}
 .toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:24px;transition:.3s}
-.toggle-slider::before{content:’’;position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
-.toggle-switch input:checked+.toggle-slider{background:var(–green)}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:.3s}
+.toggle-switch input:checked+.toggle-slider{background:var(--green)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
 
-/* DOMAIN / SECTOR PICKER */
-.domain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.domain-card{background:rgba(10,26,51,.7);border:1.5px solid var(–border);border-radius:12px;
-padding:18px 14px;text-align:center;cursor:pointer;transition:all .2s}
-.domain-card:hover{border-color:var(–gold);transform:translateY(-2px)}
-.domain-card.selected{border-color:var(–gold);background:var(–gold-dim)}
-.domain-card .di{font-size:28px;margin-bottom:8px}
-.domain-card .dn{font-size:13px;font-weight:700}
-.domain-card .dd{font-size:11px;color:var(–text-dim);margin-top:3px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy-mid);
+  border:1px solid var(--gold);border-radius:12px;padding:12px 24px;font-size:13px;font-weight:600;
+  color:var(--gold);z-index:999;display:none;animation:fadeUp .3s ease;max-width:90%;text-align:center}
 
-.sector-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(10,26,51,.7);
-border:1.5px solid var(–border);border-radius:10px;padding:10px 14px;font-size:13px;
-cursor:pointer;transition:all .2s;margin:5px}
-.sector-chip:hover{border-color:var(–gold)}
-.sector-chip.selected{border-color:var(–gold);background:var(–gold-dim);color:var(–gold)}
-.sector-chip .sc-check{width:16px;height:16px;border:1.5px solid var(–border);border-radius:4px;
-display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
-.sector-chip.selected .sc-check{background:var(–gold);border-color:var(–gold);color:var(–navy)}
-
-.adv-search-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(–navy-mid);
-border:1px solid var(–gold);border-radius:12px;padding:12px 22px;font-size:13px;font-weight:600;
-color:var(–gold);z-index:999;display:none;animation:fadeUp .3s ease;max-width:90%;text-align:center}
+@media(max-width:900px){.sidebar{display:none}.main{max-width:100%;padding:18px}
+  .stats-row{grid-template-columns:1fr 1fr}.search-grid{grid-template-columns:1fr}.charts-grid{grid-template-columns:1fr}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.pulse{animation:pulse 1.5s infinite}
-
-.provider-card{background:rgba(10,26,51,.7);border:1.5px solid var(–border);border-radius:11px;
-padding:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
-.provider-card:hover{border-color:var(–gold)}
-.provider-card.selected{border-color:var(–gold);background:var(–gold-dim)}
-.provider-logo{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;
-font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);border:1px solid var(–border)}
-.provider-info{flex:1;min-width:0}
-.provider-name{font-size:13px;font-weight:700}
-.provider-desc{font-size:11px;color:var(–text-dim);margin-top:2px}
-
-@media(max-width:1024px){.adv-search-row{grid-template-columns:1fr}}
-@media(max-width:900px){
-.menu-toggle{display:flex;align-items:center;justify-content:center}
-.sidebar{position:fixed;top:60px;right:0;height:calc(100vh - 60px);transform:translateX(100%);z-index:100;width:240px}
-.sidebar.open{transform:translateX(0)}
-.sidebar-overlay.open{display:block}
-.main{max-width:100%;padding:16px}
-.stats-row{grid-template-columns:1fr 1fr;gap:10px}
-.charts-grid{grid-template-columns:1fr}
-.api-status span:not(.status-dot){display:none}
-.brand-name{font-size:13px}
-.page-title{font-size:18px}
-.domain-grid{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:560px){
-.stats-row{grid-template-columns:1fr 1fr}
-.stat-val{font-size:20px}
-.leads-table{font-size:12px}
-.leads-table td,.leads-table th{padding:8px 6px}
-.card{padding:16px}
-.modal{padding:18px}
-.domain-grid{grid-template-columns:1fr 1fr}
-.topbar{padding:0 14px}
-.btn-primary{padding:8px 12px;font-size:12px}
-}
-@media(max-width:400px){.domain-grid{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr}}
 </style>
-
 </head>
 <body>
 
 <div class="topbar">
   <div class="brand">
     <div class="brand-logo">MTC</div>
-    <div class="brand-name">نظام <span>المبيعات الذكي</span></div>
+    <div><div class="brand-name">نظام <span>المبيعات الذكي</span></div></div>
   </div>
   <div class="topbar-actions">
     <div class="api-status" onclick="openPage('settings')">
       <span class="status-dot off" id="apiDot"></span>
-      <span id="apiStatusText">غير متصل</span>
+      <span id="apiStatusText">API غير متصل</span>
     </div>
-    <button class="btn-primary" onclick="openPage('search')">🔍 بحث</button>
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <button class="btn-primary" onclick="openPage('search')">🔍 بحث جديد</button>
   </div>
 </div>
 
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
 <div class="layout">
-<div class="sidebar" id="sidebar">
+<div class="sidebar">
   <div class="nav-title">الرئيسية</div>
   <div class="nav-item active" onclick="openPage('dashboard')" id="nav-dashboard"><span class="icon">📊</span> لوحة التحكم</div>
   <div class="nav-title">العملاء</div>
-  <div class="nav-item" onclick="openPage('search')" id="nav-search"><span class="icon">🔍</span> بحث ذكي متقدم</div>
+  <div class="nav-item" onclick="openPage('search')" id="nav-search"><span class="icon">🔍</span> بحث بالذكاء AI</div>
   <div class="nav-item" onclick="openPage('leads')" id="nav-leads"><span class="icon">👥</span> قائمة العملاء<span class="nav-badge" id="leadsCount">0</span></div>
   <div class="nav-title">التواصل</div>
   <div class="nav-item" onclick="openPage('compose')" id="nav-compose"><span class="icon">✍️</span> كتابة الرسائل</div>
@@ -320,19 +271,20 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
   <div class="nav-item" onclick="openPage('schedule')" id="nav-schedule"><span class="icon">🗓️</span> الجدولة</div>
   <div class="nav-title">النظام</div>
   <div class="nav-item" onclick="openPage('settings')" id="nav-settings"><span class="icon">⚙️</span> الإعدادات والربط</div>
-  <div class="nav-item" onclick="openPage('deploy')" id="nav-deploy"><span class="icon">📘</span> الدليل الإرشادي</div>
+  <div class="nav-item" onclick="openPage('deploy')" id="nav-deploy"><span class="icon">📘</span> دليل التشغيل</div>
 </div>
 
 <div class="main">
 
 <!-- DASHBOARD -->
-
 <div class="page active" id="page-dashboard">
-  <div class="page-header"><div class="page-title">لوحة <span>التحكم</span></div>
-    <div class="page-sub">نظرة شاملة على أداء منظومة المبيعات</div></div>
+  <div class="page-header">
+    <div class="page-title">لوحة <span>التحكم</span></div>
+    <div class="page-sub">نظرة شاملة على أداء منظومة المبيعات</div>
+  </div>
   <div id="setupBanner" class="info-box info-gold" style="display:none">
     <div class="ib-title">⚡ ابدأ التشغيل في 3 خطوات</div>
-    <div style="color:var(--text-dim)">1) اربط أي مزود ذكاء اصطناعي في الإعدادات · 2) اختر مجالك وابحث · 3) ولّد الرسائل وأرسل</div>
+    <div style="color:var(--text-dim)">1) أضف مفتاح Anthropic API في الإعدادات &nbsp;·&nbsp; 2) ابحث عن العملاء بالذكاء الاصطناعي &nbsp;·&nbsp; 3) ولّد الرسائل وأرسلها</div>
     <button class="btn-primary" style="margin-top:10px" onclick="openPage('settings')">⚙️ اذهب للإعدادات</button>
   </div>
   <div class="stats-row">
@@ -341,97 +293,87 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
     <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-val" id="st3">0</div><div class="stat-label">رسالة مفتوحة</div></div>
     <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-val" id="st4">0</div><div class="stat-label">رد وارد</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px" class="charts-grid">
-    <div class="card"><div class="card-header"><div class="card-title">أداء <span>الحملات</span></div></div>
-      <div class="chart-container"><canvas id="chartMain"></canvas></div></div>
-    <div class="card"><div class="card-header"><div class="card-title">توزيع <span>القطاعات</span></div></div>
-      <div class="chart-container"><canvas id="chartSectors"></canvas></div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">أداء <span>الحملات</span></div></div>
+      <div class="chart-container"><canvas id="chartMain"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">توزيع <span>القطاعات</span></div></div>
+      <div class="chart-container"><canvas id="chartSectors"></canvas></div>
+    </div>
   </div>
-  <div class="card"><div class="card-header"><div class="card-title">📅 الجدولة <span>القادمة</span></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📅 الجدولة <span>القادمة</span></div>
       <button class="btn-outline" onclick="openPage('schedule')">عرض الكل</button></div>
-    <div id="dashSchedule"></div></div>
+    <div id="dashSchedule"></div>
+  </div>
 </div>
 
-<!-- ADVANCED SEARCH -->
-
+<!-- SEARCH -->
 <div class="page" id="page-search">
-  <div class="page-header"><div class="page-title">🔍 البحث <span>الذكي المتقدم</span></div>
-    <div class="page-sub">اختر مجال عملك، ثم القطاعات المستهدفة، ودع الذكاء الاصطناعي يستخرج العملاء المحتملين ببياناتهم وروابطهم</div></div>
+  <div class="page-header">
+    <div class="page-title">🔍 البحث <span>بالذكاء الاصطناعي</span></div>
+    <div class="page-sub">يحلل Claude القطاع المستهدف ويستخرج عملاء محتملين مع تقييم نسبة الاهتمام (≥ 20 عميل)</div>
+  </div>
 
   <div id="searchApiWarn" class="info-box info-gold" style="display:none">
-    <div class="ib-title">⚠️ لم يتم ربط مزود ذكاء اصطناعي</div>
-    <div style="color:var(--text-dim)">للبحث الحقيقي اربط أي مزود (OpenAI / Claude / Gemini / Groq / غيرها) في الإعدادات. سيعمل النظام تجريبياً حتى ذلك الحين.</div>
+    <div class="ib-title">⚠️ مفتاح API غير موجود</div>
+    <div style="color:var(--text-dim)">للحصول على بحث حقيقي بالذكاء الاصطناعي، أضف مفتاح Anthropic في الإعدادات. سيعمل النظام بالوضع التجريبي حتى ذلك الحين.</div>
   </div>
 
-  <!-- STEP 1: DOMAIN -->
-
-  <div class="card" id="step1Card">
-    <div class="card-title" style="margin-bottom:6px">① اختر مجال عملك</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">حدد القطاع الذي تعمل فيه لتظهر لك القطاعات المستهدفة المناسبة</div>
-    <div class="domain-grid" id="domainGrid"></div>
-  </div>
-
-  <!-- STEP 2: SECTORS -->
-
-  <div class="card" id="step2Card" style="display:none">
-    <div class="card-header">
-      <div class="card-title">② اختر القطاعات <span>المستهدفة</span></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-sm btn-view" onclick="selectAllSectors()">تحديد الكل</button>
-        <button class="btn-sm btn-outline" style="padding:6px 12px" onclick="clearSectors()">مسح</button>
+  <div class="card">
+    <div class="search-grid">
+      <div class="form-group" style="margin:0">
+        <label>القطاع المستهدف</label>
+        <select class="form-select" id="sectorFilter">
+          <option value="شركات البناء والمقاولات الكبرى">شركات البناء والمقاولات</option>
+          <option value="شركات النفط والغاز والحفر">شركات النفط والغاز</option>
+          <option value="الموانئ وشركات اللوجستيات">الموانئ واللوجستيات</option>
+          <option value="المصانع والشركات الصناعية الكبرى">المصانع والشركات الصناعية</option>
+          <option value="الجهات والمشاريع الحكومية">الجهات الحكومية</option>
+          <option value="شركات المقاولات والبنية التحتية">البنية التحتية</option>
+          <option value="مستوردي ومصدري البضائع الثقيلة">الاستيراد والتصدير</option>
+        </select>
       </div>
-    </div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">يمكنك اختيار قطاع واحد أو أكثر — كلما حددت أكثر زاد عدد العملاء المحتملين</div>
-    <div id="sectorChips"></div>
-  </div>
-
-  <!-- STEP 3: OPTIONS -->
-
-  <div class="card" id="step3Card" style="display:none">
-    <div class="card-title" style="margin-bottom:16px">③ خيارات البحث</div>
-    <div class="adv-search-row">
-      <div class="form-group"><label>المنطقة الجغرافية</label>
+      <div class="form-group" style="margin:0">
+        <label>المدينة / المنطقة</label>
         <select class="form-select" id="cityFilter">
           <option>جدة ومكة المكرمة</option><option>الرياض والمنطقة الوسطى</option>
-          <option>الدمام والشرقية</option><option>المدينة المنورة</option>
-          <option>عسير والجنوب</option><option>تبوك والشمال</option>
-          <option>جميع مناطق المملكة</option><option>دول الخليج</option>
-        </select></div>
-      <div class="form-group"><label>حجم الشركات المستهدفة</label>
-        <select class="form-select" id="sizeFilter">
-          <option value="كبيرة">كبرى (الأولوية القصوى)</option>
-          <option value="متوسطة وكبيرة">متوسطة وكبيرة</option>
-          <option value="جميع الأحجام">جميع الأحجام</option>
-        </select></div>
+          <option>الدمام والمنطقة الشرقية</option><option>المدينة المنورة</option>
+          <option>جميع مناطق المملكة</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="startAISearch()" id="searchBtn">🤖 ابدأ البحث الذكي</button>
     </div>
-    <div class="adv-search-row">
-      <div class="form-group"><label>الحد الأدنى لنسبة الاهتمام: <span id="scoreVal" style="color:var(--gold);font-weight:700">40%</span></label>
+    <div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="flex:1;min-width:170px;margin:0">
+        <label>الحد الأدنى لنسبة الاهتمام: <span id="scoreVal" style="color:var(--gold);font-weight:700">40%</span></label>
         <input type="range" min="20" max="90" value="40" id="scoreThreshold"
-          oninput="document.getElementById('scoreVal').textContent=this.value+'%'" style="width:100%;accent-color:var(--gold)"></div>
-      <div class="form-group"><label>عدد العملاء المطلوب (≥ 20)</label>
-        <input type="number" class="form-input" id="leadsMin" value="25" min="20" max="80"></div>
+          oninput="document.getElementById('scoreVal').textContent=this.value+'%'" style="width:100%;accent-color:var(--gold)">
+      </div>
+      <div class="form-group" style="flex:1;min-width:170px;margin:0">
+        <label>عدد العملاء (الحد الأدنى 20)</label>
+        <input type="number" class="form-input" id="leadsMin" value="20" min="20" max="60">
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;margin:10px 0 16px;padding:12px;background:rgba(176,124,255,.05);border:1px solid rgba(176,124,255,.2);border-radius:10px">
-      <label class="toggle-switch"><input type="checkbox" id="autoImportToggle"><span class="toggle-slider"></span></label>
-      <div><div style="font-size:13px;font-weight:600">🤖 الاستيراد التلقائي للشركات</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">عند التفعيل: يضيف النظام كل النتائج عالية الاهتمام (≥75%) للقائمة تلقائياً دون نقر يدوي</div></div>
-    </div>
-    <button class="btn-primary" style="width:100%" onclick="startAISearch()" id="searchBtn">🤖 ابدأ البحث الذكي الآن</button>
   </div>
 
   <div class="ai-loader" id="aiLoader">
     <div class="loader-dots"><span></span><span></span><span></span></div>
-    <div style="flex:1"><div id="aiLoaderText" style="font-size:13px;font-weight:600">يحلل الذكاء الاصطناعي...</div>
-      <div class="progress-bar"><div class="progress-fill" id="aiProgress" style="width:0%"></div></div></div>
+    <div style="flex:1">
+      <div id="aiLoaderText" style="font-size:13px;font-weight:600">يحلل الذكاء الاصطناعي العملاء المحتملين...</div>
+      <div class="progress-bar"><div class="progress-fill" id="aiProgress" style="width:0%"></div></div>
+    </div>
     <div id="aiProgressNum" style="font-size:13px;color:var(--cyan);font-weight:700">0%</div>
   </div>
 
   <div id="searchResults" style="display:none">
     <div class="card">
       <div class="card-header">
-        <div class="card-title">✅ النتائج — <span id="resultsCount">0</span> عميل
+        <div class="card-title">✅ النتائج — <span id="resultsCount">0</span> عميل محتمل
           <span id="resultMode" class="tag tag-demo" style="margin-right:8px">تجريبي</span></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px">
           <button class="btn-outline" onclick="selectAll()">تحديد الكل</button>
           <button class="btn-primary" onclick="sendSelected()">📧 إرسال للمحددين</button>
         </div>
@@ -443,18 +385,21 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
         <button class="filter-btn" onclick="filterLeads('low',this)">🟠 منخفضة</button>
       </div>
       <div style="overflow-x:auto">
-        <table class="leads-table"><thead><tr><th style="width:34px"></th><th>الشركة</th><th>القطاع</th><th>المدينة</th><th>البريد</th><th>الهاتف</th><th>الموقع</th><th>الاهتمام</th><th>إجراء</th></tr></thead>
-          <tbody id="resultsBody"></tbody></table>
+        <table class="leads-table">
+          <thead><tr><th style="width:32px"></th><th>الشركة</th><th>القطاع</th><th>المدينة</th><th>البريد</th><th>الهاتف</th><th>الاهتمام</th><th>الإجراء</th></tr></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
 
 <!-- LEADS -->
-
 <div class="page" id="page-leads">
-  <div class="page-header"><div class="page-title">👥 قائمة <span>العملاء المحفوظين</span></div>
-    <div class="page-sub">محفوظون بشكل دائم — لا تُفقد عند إغلاق المتصفح</div></div>
+  <div class="page-header">
+    <div class="page-title">👥 قائمة <span>العملاء المحفوظين</span></div>
+    <div class="page-sub">جميع العملاء محفوظون بشكل دائم — لا تُفقد عند إغلاق المتصفح</div>
+  </div>
   <div class="filter-row">
     <button class="filter-btn active" onclick="filterLeadsList('all',this)">الكل</button>
     <button class="filter-btn" onclick="filterLeadsList('sent',this)">مرسل</button>
@@ -464,56 +409,70 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <div style="overflow-x:auto">
-      <table class="leads-table"><thead><tr><th style="padding:14px 11px">الشركة</th><th>القطاع</th><th>البريد</th><th>الاهتمام</th><th>الحالة</th><th>آخر تواصل</th><th>إجراءات</th></tr></thead>
-        <tbody id="leadsListBody"></tbody></table>
+      <table class="leads-table">
+        <thead><tr><th style="padding:14px 11px">الشركة</th><th>القطاع</th><th>البريد</th><th>الاهتمام</th><th>الحالة</th><th>آخر تواصل</th><th>الإجراءات</th></tr></thead>
+        <tbody id="leadsListBody"></tbody>
+      </table>
     </div>
-    <div id="leadsEmpty" class="empty-state"><div class="icon">👥</div><p>لا يوجد عملاء بعد — ابدأ بالبحث الذكي</p></div>
+    <div id="leadsEmpty" class="empty-state"><div class="icon">👥</div><p>لا يوجد عملاء بعد — ابدأ بالبحث بالذكاء الاصطناعي</p></div>
   </div>
 </div>
 
 <!-- COMPOSE -->
-
 <div class="page" id="page-compose">
-  <div class="page-header"><div class="page-title">✍️ كتابة <span>الرسائل بالذكاء</span></div>
-    <div class="page-sub">يكتب الذكاء الاصطناعي رسالة مخصصة بالكامل حسب نشاط الشركة</div></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="charts-grid">
+  <div class="page-header">
+    <div class="page-title">✍️ كتابة <span>الرسائل بالذكاء</span></div>
+    <div class="page-sub">يكتب Claude رسالة مخصصة بالكامل بناءً على نشاط الشركة المستهدفة</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div>
       <div class="card">
         <div class="card-title" style="margin-bottom:16px">إعدادات الرسالة</div>
-        <div class="form-group"><label>اختر من العملاء المحفوظين</label>
-          <select class="form-select" id="composeClient" onchange="fillClientData()"><option value="">— اختر عميلاً —</option></select></div>
+        <div class="form-group">
+          <label>اختر من العملاء المحفوظين</label>
+          <select class="form-select" id="composeClient" onchange="fillClientData()">
+            <option value="">— اختر عميلاً —</option>
+          </select>
+        </div>
         <div class="form-group"><label>اسم الشركة</label><input class="form-input" id="cCompany" placeholder="اسم الشركة"></div>
-        <div class="form-group"><label>القطاع / النشاط</label><input class="form-input" id="cSector" placeholder="مثال: مقاولات..."></div>
+        <div class="form-group"><label>القطاع / النشاط</label><input class="form-input" id="cSector" placeholder="مثال: مقاولات، نفط..."></div>
         <div class="form-group"><label>نوع الرسالة</label>
           <select class="form-select" id="msgType">
             <option value="intro">تعريفية — أول تواصل</option>
             <option value="followup">متابعة — لم يرد</option>
-            <option value="proposal">عرض تعاون / طلب اجتماع</option>
+            <option value="proposal">عرض سعر / تعاون</option>
             <option value="reopen">إعادة فتح بعد فترة</option>
-          </select></div>
+          </select>
+        </div>
         <div class="form-group"><label>لغة الرسالة</label>
-          <select class="form-select" id="msgLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="both">عربي + إنجليزي</option></select></div>
+          <select class="form-select" id="msgLang">
+            <option value="ar">عربي</option><option value="en">إنجليزي</option><option value="both">عربي + إنجليزي</option>
+          </select>
+        </div>
         <div class="form-group"><label>ملاحظة خاصة (اختياري)</label>
           <textarea class="form-textarea" id="cNote" placeholder="تفاصيل تريد تضمينها..."></textarea></div>
-        <button class="btn-primary" style="width:100%" onclick="generateMessage()" id="genBtn">🤖 توليد الرسالة</button>
+        <button class="btn-primary" style="width:100%" onclick="generateMessage()" id="genBtn">🤖 توليد الرسالة بالذكاء</button>
       </div>
       <div class="card">
         <div class="card-title" style="margin-bottom:14px">📎 المرفقات</div>
         <div id="attachments"><div class="att-chip">📋 بروفايل MTC.pdf</div></div>
-        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
-          <button class="btn-outline" style="flex:1;min-width:90px" onclick="addAttachment('بروفايل MTC.pdf','📋')">+ بروفايل</button>
-          <button class="btn-outline" style="flex:1;min-width:90px" onclick="addAttachment('عرض الأسعار.pdf','💰')">+ عرض سعر</button>
-          <button class="btn-outline" style="flex:1;min-width:90px" onclick="addAttachment('مرفق مخصص.pdf','📁')">+ مخصص</button>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('بروفايل MTC.pdf','📋')">+ بروفايل</button>
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('عرض الأسعار.pdf','💰')">+ عرض سعر</button>
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('مرفق مخصص.pdf','📁')">+ مخصص</button>
         </div>
       </div>
     </div>
     <div>
       <div class="card">
-        <div class="card-header"><div class="card-title">معاينة <span>الرسالة</span></div>
-          <button class="btn-sm btn-view" onclick="generateMessage()">🔄 أعد التوليد</button></div>
+        <div class="card-header">
+          <div class="card-title">معاينة <span>الرسالة</span></div>
+          <button class="btn-sm btn-view" onclick="generateMessage()">🔄 أعد التوليد</button>
+        </div>
         <div class="ai-loader" id="composeLoader">
           <div class="loader-dots"><span></span><span></span><span></span></div>
-          <div style="font-size:13px">الذكاء الاصطناعي يكتب الرسالة...</div></div>
+          <div style="font-size:13px">Claude يكتب الرسالة المخصصة...</div>
+        </div>
         <div id="msgPreviewBox" style="display:none">
           <div class="msg-preview" id="msgPreview"></div>
           <div class="msg-actions">
@@ -524,8 +483,8 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
           </div>
           <div style="margin-top:12px">
             <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">بيانات المستلم</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <input class="form-input" id="recipientEmail" placeholder="email@company.com" style="direction:ltr;flex:1;min-width:160px">
+            <div style="display:flex;gap:8px">
+              <input class="form-input" id="recipientEmail" placeholder="email@company.com" style="direction:ltr">
               <input class="form-input" id="recipientPhone" placeholder="+966..." style="direction:ltr;max-width:140px">
             </div>
           </div>
@@ -537,166 +496,208 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
 </div>
 
 <!-- CAMPAIGNS -->
-
 <div class="page" id="page-campaigns">
-  <div class="page-header"><div class="page-title">🚀 إدارة <span>الحملات</span></div>
-    <div class="page-sub">إرسال جماعي ذكي مع توليد رسالة مخصصة لكل شركة + حماية كاملة من الحظر</div></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="charts-grid">
-    <div class="card" onclick="startCampaign('email')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:26px">
+  <div class="page-header">
+    <div class="page-title">🚀 إدارة <span>الحملات</span></div>
+    <div class="page-sub">إرسال جماعي ذكي مع توليد رسالة مخصصة لكل شركة + حماية كاملة من الحظر</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" onclick="startCampaign('email')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:28px">
       <div style="font-size:30px;margin-bottom:8px">📧</div>
       <div style="font-weight:700;margin-bottom:4px">حملة بريد إلكتروني</div>
-      <div style="font-size:12px;color:var(--text-dim)">توليد + إرسال تدريجي ذكي</div></div>
-    <div class="card" onclick="startCampaign('wa')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:26px">
+      <div style="font-size:12px;color:var(--text-dim)">توليد + إرسال تدريجي ذكي مع حماية</div>
+    </div>
+    <div class="card" onclick="startCampaign('wa')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:28px">
       <div style="font-size:30px;margin-bottom:8px">📱</div>
       <div style="font-weight:700;margin-bottom:4px">حملة واتساب</div>
-      <div style="font-size:12px;color:var(--text-dim)">روابط مخصصة لكل عميل</div></div>
+      <div style="font-size:12px;color:var(--text-dim)">روابط مخصصة جاهزة لكل عميل</div>
+    </div>
   </div>
   <div class="card" id="campaignPanel" style="display:none">
     <div class="card-title" style="margin-bottom:16px">⚙️ إعدادات الحملة</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px" class="charts-grid">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
       <div class="form-group" style="margin:0"><label>تأخير بين الرسائل</label>
-        <select class="form-select" id="delayBetween"><option value="30-90">30-90 ثانية (موصى)</option><option value="60-180">1-3 دقائق (آمن جداً)</option><option value="15-40">15-40 ثانية (سريع)</option></select></div>
+        <select class="form-select" id="delayBetween">
+          <option value="30-90">30-90 ثانية (موصى به)</option>
+          <option value="60-180">1-3 دقائق (آمن جداً)</option>
+          <option value="15-40">15-40 ثانية (سريع)</option>
+        </select></div>
       <div class="form-group" style="margin:0"><label>ساعات الإرسال</label>
         <select class="form-select"><option>9ص - 12م</option><option>1م - 4م</option><option>9ص - 5م</option></select></div>
       <div class="form-group" style="margin:0"><label>السقف اليومي</label>
-        <select class="form-select"><option>40 رسالة/يوم</option><option>60 رسالة/يوم</option><option>20 رسالة/يوم</option></select></div>
+        <select class="form-select"><option>40 رسالة/يوم (آمن)</option><option>60 رسالة/يوم</option><option>20 رسالة/يوم (متحفظ)</option></select></div>
     </div>
     <div class="info-box info-cyan">
-      <div class="ib-title">🛡️ الحماية من الحظر (تلقائية)</div>
+      <div class="ib-title">🛡️ نظام الحماية من الحظر (تلقائي)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;color:var(--text-dim)">
-        <div>✅ موضوع مختلف لكل مستلم</div><div>✅ تأخير عشوائي</div>
-        <div>✅ رابط إلغاء اشتراك</div><div>✅ سقف يومي</div>
-        <div>✅ تخصيص كامل لكل شركة</div><div>✅ بيكسل تتبع</div>
-        <div>✅ تدفئة المرسل تدريجياً</div><div>✅ تحقق صحة البريد</div>
+        <div>✅ موضوع مختلف لكل مستلم</div><div>✅ تأخير عشوائي بين الإرسالات</div>
+        <div>✅ رابط إلغاء اشتراك تلقائي</div><div>✅ سقف يومي محدد</div>
+        <div>✅ تخصيص كامل لكل شركة</div><div>✅ بيكسل تتبع للفتح</div>
+        <div>✅ تدفئة المرسل تدريجياً</div><div>✅ تحقق صحة البريد قبل الإرسال</div>
       </div>
     </div>
-    <div id="sendProgressArea" style="max-height:320px;overflow-y:auto"></div>
-    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+    <div id="sendProgressArea" style="max-height:300px;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;margin-top:10px">
       <button class="btn-primary" onclick="executeCampaign()" id="execBtn">🚀 تنفيذ الحملة</button>
       <button class="btn-outline" onclick="document.getElementById('campaignPanel').style.display='none'">إلغاء</button>
     </div>
   </div>
-  <div class="card"><div class="card-header"><div class="card-title">📋 سجل <span>الحملات</span></div></div>
-    <div id="pastCampaigns"><div class="empty-state" style="padding:30px"><div class="icon">📭</div><p>لا توجد حملات سابقة</p></div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📋 سجل <span>الحملات</span></div></div>
+    <div id="pastCampaigns"><div class="empty-state" style="padding:30px"><div class="icon">📭</div><p>لا توجد حملات سابقة</p></div></div>
+  </div>
 </div>
 
 <!-- INBOX -->
-
 <div class="page" id="page-inbox">
-  <div class="page-header"><div class="page-title">📥 صندوق <span>الوارد</span></div>
-    <div class="page-sub">استقبال الردود وإدارة المحادثات — يتطلب الخادم الخلفي للاستقبال التلقائي</div></div>
-  <div class="info-box info-gold"><div class="ib-title">ℹ️ آلية استقبال الردود</div>
-    <div style="color:var(--text-dim)">الواجهة لا تستقبل بريداً مباشرة. شغّل خادم Node.js (في الدليل) ليجلب الردود عبر IMAP ويعرضها هنا. الآن تظهر رسائل توضيحية.</div></div>
-  <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px" class="charts-grid">
-    <div class="card" style="padding:16px"><div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">الرسائل الواردة</div>
-      <div id="inboxList"></div></div>
+  <div class="page-header">
+    <div class="page-title">📥 صندوق <span>الوارد</span></div>
+    <div class="page-sub">استقبال الردود وإدارة المحادثات — يتطلب ربط الخادم الخلفي للاستقبال التلقائي</div>
+  </div>
+  <div class="info-box info-gold">
+    <div class="ib-title">ℹ️ كيف يعمل استقبال الردود</div>
+    <div style="color:var(--text-dim)">الواجهة وحدها لا تستطيع استقبال البريد. شغّل خادم Node.js (في دليل التشغيل) ليجلب الردود تلقائياً عبر IMAP/Webhook ويعرضها هنا. حالياً يعرض النظام رسائل تجريبية للتوضيح.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px">
+    <div class="card" style="padding:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">الرسائل الواردة</div>
+      <div id="inboxList"></div>
+    </div>
     <div class="card" id="inboxDetail"><div class="empty-state"><div class="icon">📬</div><p>اختر رسالة لعرضها</p></div></div>
   </div>
 </div>
 
 <!-- ANALYTICS -->
-
 <div class="page" id="page-analytics">
-  <div class="page-header"><div class="page-title">📈 لوحة <span>التحليلات</span></div>
-    <div class="page-sub">تتبع الأداء وأوقات الفتح وسلوك العملاء</div></div>
+  <div class="page-header">
+    <div class="page-title">📈 لوحة <span>التحليلات</span></div>
+    <div class="page-sub">تتبع الأداء وتحليل سلوك العملاء وأوقات الفتح</div>
+  </div>
   <div class="stats-row">
     <div class="stat-card"><div class="stat-icon">📤</div><div class="stat-val" id="an1">0</div><div class="stat-label">إجمالي مرسل</div></div>
     <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-val" id="an2">0%</div><div class="stat-label">معدل الفتح</div></div>
     <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-val" id="an3">0%</div><div class="stat-label">معدل الرد</div></div>
-    <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-val" id="an4">0</div><div class="stat-label">بانتظار إعادة</div></div>
+    <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-val" id="an4">0</div><div class="stat-label">بانتظار إعادة إرسال</div></div>
   </div>
   <div class="charts-grid">
     <div class="card"><div class="card-title" style="margin-bottom:16px">أوقات <span>فتح البريد</span></div><div class="chart-container"><canvas id="chartOpen"></canvas></div></div>
     <div class="card"><div class="card-title" style="margin-bottom:16px">أداء <span>القطاعات</span></div><div class="chart-container"><canvas id="chartPerf"></canvas></div></div>
   </div>
-  <div class="card"><div class="card-title" style="margin-bottom:16px">🕐 خريطة <span>التتبع</span></div><div id="trackingMap"></div></div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">🕐 خريطة <span>التتبع</span></div>
+    <div id="trackingMap"></div>
+  </div>
 </div>
 
 <!-- SCHEDULE -->
-
 <div class="page" id="page-schedule">
-  <div class="page-header"><div class="page-title">🗓️ الجدولة <span>التلقائية</span></div>
-    <div class="page-sub">يعيد النظام الإرسال تلقائياً بيوم ووقت مختلف لمن لم يفتح</div></div>
-  <div class="info-box info-green"><div class="ib-title">✅ القاعدة التلقائية النشطة</div>
-    <div style="color:var(--text-dim)">كل أسبوع · يوم مختلف تلقائياً · ساعة من نافذة الفتح المتوقعة · يتوقف فور الفتح أو الرد</div></div>
+  <div class="page-header">
+    <div class="page-title">🗓️ الجدولة <span>التلقائية</span></div>
+    <div class="page-sub">يعيد النظام الإرسال تلقائياً بيوم ووقت مختلف لمن لم يفتح الرسالة</div>
+  </div>
+  <div class="info-box info-green">
+    <div class="ib-title">✅ القاعدة التلقائية النشطة</div>
+    <div style="color:var(--text-dim)">كل أسبوع · يوم مختلف يُختار تلقائياً · ساعة مختلفة من نافذة الفتح المتوقعة (9-11ص أو 1-3م) · يتوقف فوراً عند الفتح أو الرد</div>
+  </div>
   <div class="card">
     <div class="card-header"><div class="card-title">سلسلة <span>إعادة الإرسال</span></div>
-      <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      <label class="toggle-switch"><input type="checkbox" checked id="autoSchedToggle"><span class="toggle-slider"></span></label></div>
     <div class="schedule-item"><div class="schedule-time">الإرسال 1</div>
-      <div class="schedule-info"><div class="schedule-title">الرسالة التعريفية الأصلية</div><div class="schedule-sub">عند بدء الحملة</div></div><span class="tag tag-sent">فوري</span></div>
+      <div class="schedule-info"><div class="schedule-title">الرسالة التعريفية الأصلية</div><div class="schedule-sub">عند بدء الحملة</div></div>
+      <span class="tag tag-sent">فوري</span></div>
     <div class="schedule-item"><div class="schedule-time">+7 أيام</div>
-      <div class="schedule-info"><div class="schedule-title">متابعة لطيفة</div><div class="schedule-sub">يوم مختلف · وقت مختلف · نص مُعاد صياغته</div></div><span class="tag tag-pending">مجدول</span></div>
+      <div class="schedule-info"><div class="schedule-title">متابعة لطيفة</div><div class="schedule-sub">يوم مختلف · وقت مختلف · نص مُعاد صياغته بالذكاء</div></div>
+      <span class="tag tag-pending">مجدول</span></div>
     <div class="schedule-item"><div class="schedule-time">+14 يوم</div>
-      <div class="schedule-info"><div class="schedule-title">تذكير بقيمة إضافية</div><div class="schedule-sub">عرض أو ميزة جديدة</div></div><span class="tag tag-pending">مجدول</span></div>
+      <div class="schedule-info"><div class="schedule-title">تذكير بقيمة إضافية</div><div class="schedule-sub">يضيف عرضاً أو ميزة جديدة</div></div>
+      <span class="tag tag-pending">مجدول</span></div>
     <div class="schedule-item" style="border:none"><div class="schedule-time">+21 يوم</div>
-      <div class="schedule-info"><div class="schedule-title">أرشفة تلقائية</div><div class="schedule-sub">ينقل للقائمة الباردة ويتوقف</div></div><span class="tag tag-cold">توقف</span></div>
+      <div class="schedule-info"><div class="schedule-title">أرشفة تلقائية</div><div class="schedule-sub">ينقل للقائمة الباردة ويتوقف</div></div>
+      <span class="tag tag-cold">توقف</span></div>
   </div>
-  <div class="card"><div class="card-title" style="margin-bottom:14px">⏰ خوارزمية <span>الوقت الأمثل</span></div>
-    <div style="font-size:13px;color:var(--text-dim);line-height:1.9">يحلل النظام أوقات فتح الرسائل السابقة لكل عميل ويختار للإرسال التالي وقتاً ضمن أعلى نافذة فتح متوقعة، مع تغيير اليوم في كل دورة (الأحد ← الثلاثاء ← الخميس) لتجنب التكرار وزيادة فرصة الفتح.</div></div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">⏰ خوارزمية اختيار <span>الوقت الأمثل</span></div>
+    <div style="font-size:13px;color:var(--text-dim);line-height:1.9">
+      يحلل النظام أوقات فتح الرسائل السابقة لكل عميل ويختار للإرسال التالي وقتاً ضمن أعلى نافذة فتح متوقعة،
+      مع تغيير اليوم في كل دورة (الأحد ← الثلاثاء ← الخميس) لتجنب التكرار الممل وزيادة فرصة الفتح.
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS -->
-
 <div class="page" id="page-settings">
-  <div class="page-header"><div class="page-title">⚙️ الإعدادات <span>والربط الذكي</span></div>
-    <div class="page-sub">اربط أي مزود ذكاء اصطناعي — النظام يتأقلم تلقائياً مع البروتوكول الصحيح ويتجاوز المشاكل الشائعة</div></div>
-
-  <div class="card">
-    <div class="card-title" style="margin-bottom:6px">🤖 مزود الذكاء الاصطناعي</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">اختر أي مزود — النظام يكتشف البروتوكول الصحيح ويتصل بطريقة سليمة. لست محصوراً بمزود واحد.</div>
-
-```
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="providerGrid"></div>
-
-<div class="form-group"><label>مفتاح API</label>
-  <input class="form-input" id="aiKey" type="password" placeholder="ألصق مفتاحك هنا..." style="direction:ltr"></div>
-<div class="form-group"><label>الموديل</label>
-  <input class="form-input" id="aiModel" placeholder="مثال: gpt-4o / claude-sonnet-4 / gemini-2.0-flash" style="direction:ltr">
-  <div style="font-size:11px;color:var(--text-dim);margin-top:5px" id="modelHint">سيُملأ تلقائياً حسب المزود — يمكنك تغييره</div></div>
-<div class="form-group" id="customEndpointGroup" style="display:none"><label>عنوان الخادم المخصص (Endpoint URL)</label>
-  <input class="form-input" id="aiEndpoint" placeholder="https://api.your-provider.com/v1/chat/completions" style="direction:ltr"></div>
-
-<div style="display:flex;gap:10px;flex-wrap:wrap">
-  <button class="btn-primary" onclick="saveAndTestAI()">💾 حفظ واختبار الاتصال</button>
-  <button class="btn-outline" onclick="testAI()">🔌 اختبار فقط</button>
-</div>
-<div id="aiStatus" style="margin-top:12px;font-size:12px"></div>
-
-<div class="info-box info-cyan" style="margin-top:14px">
-  <div class="ib-title">🧠 المُحوّل الذكي (Smart Adapter)</div>
-  <div style="color:var(--text-dim)">عند الاتصال، يكتشف النظام تلقائياً نوع البروتوكول (OpenAI-compatible / Anthropic / Gemini)، يضبط الرؤوس والمفاتيح الصحيحة، ويتعامل مع أخطاء (401 مفتاح خاطئ / 429 حد الاستخدام / CORS / مهلة) ويعيد المحاولة بذكاء.</div>
-</div>
-```
-
+  <div class="page-header">
+    <div class="page-title">⚙️ الإعدادات <span>والربط</span></div>
+    <div class="page-sub">ربط الذكاء الاصطناعي والبريد وواتساب — كل المفاتيح تُحفظ بشكل دائم ومحلي</div>
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:6px">🔎 مزود بيانات الشركات (اختياري)</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">لجلب شركات حقيقية ببياناتها وروابطها. بدونه يعتمد النظام على الذكاء الاصطناعي</div>
-    <div class="form-group"><label>المزود</label>
-      <select class="form-select" id="dataProvider"><option value="ai">الذكاء الاصطناعي فقط (افتراضي)</option>
-        <option value="google">Google Places API</option><option value="serpapi">SerpAPI</option></select></div>
-    <div class="form-group"><label>مفتاح API</label><input class="form-input" id="dataKey" type="password" placeholder="ضع المفتاح إن وُجد" style="direction:ltr"></div>
-    <button class="btn-primary" onclick="saveDataProvider()">💾 حفظ</button>
-    <div id="dataStatus" style="margin-top:10px;font-size:12px"></div>
+    <div class="card-title" style="margin-bottom:6px">🤖 الذكاء الاصطناعي — Anthropic Claude</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">المزود الأساسي لتحليل العملاء وكتابة الرسائل المخصصة</div>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <input class="form-input" id="anthropicKey" type="password" placeholder="sk-ant-api03-..." style="direction:ltr">
+    </div>
+    <div class="form-group">
+      <label>الموديل</label>
+      <select class="form-select" id="anthropicModel">
+        <option value="claude-sonnet-4-20250514">claude-sonnet-4 (موصى به — توازن السرعة والجودة)</option>
+        <option value="claude-opus-4-20250514">claude-opus-4 (الأقوى — للرسائل المعقدة)</option>
+        <option value="claude-haiku-4-5-20251001">claude-haiku-4.5 (الأسرع — للحجم الكبير)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveAnthropicKey()">💾 حفظ واختبار</button>
+      <button class="btn-outline" onclick="testAnthropic()">🔌 اختبار الاتصال فقط</button>
+    </div>
+    <div id="anthropicStatus" style="margin-top:10px;font-size:12px"></div>
+    <div class="info-box info-gold" style="margin-top:14px">
+      <div class="ib-title">📍 من أين أحصل على المفتاح؟</div>
+      <div style="color:var(--text-dim)">من <b>console.anthropic.com</b> ← API Keys ← Create Key. مفتاحك يبدأ بـ <code style="color:var(--gold)">sk-ant-</code></div>
+    </div>
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:6px">📧 الخادم الخلفي للإرسال</div>
+    <div class="card-title" style="margin-bottom:6px">🔎 البحث عن العملاء — Google Places (اختياري)</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">لجلب شركات حقيقية ببياناتها. بدونه يعتمد النظام على Claude لتوليد القوائم المحتملة</div>
+    <div class="form-group">
+      <label>Google Places API Key</label>
+      <input class="form-input" id="googleKey" type="password" placeholder="AIza..." style="direction:ltr">
+    </div>
+    <button class="btn-primary" onclick="saveGoogleKey()">💾 حفظ</button>
+    <div id="googleStatus" style="margin-top:10px;font-size:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">📧 إرسال البريد — الخادم الخلفي</div>
     <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رابط خادم Node.js الذي يرسل البريد فعلياً ويتتبع الفتح ويستقبل الردود</div>
-    <div class="form-group"><label>عنوان الخادم (Backend URL)</label><input class="form-input" id="backendUrl" placeholder="https://your-server.com" style="direction:ltr"></div>
-    <div class="form-group"><label>اسم المرسل</label><input class="form-input" id="senderName" value="شركة محمد للنقليات - MTC"></div>
-    <div class="form-group"><label>بريد الإرسال</label><input class="form-input" id="senderEmail" value="alhasanim194@gmail.com" style="direction:ltr"></div>
-    <button class="btn-primary" onclick="saveBackend()">💾 حفظ واختبار</button>
+    <div class="form-group">
+      <label>عنوان الخادم الخلفي (Backend URL)</label>
+      <input class="form-input" id="backendUrl" placeholder="https://your-server.com" style="direction:ltr">
+    </div>
+    <div class="form-group">
+      <label>اسم المرسل الظاهر</label>
+      <input class="form-input" id="senderName" value="شركة محمد للنقليات - MTC">
+    </div>
+    <div class="form-group">
+      <label>بريد الإرسال</label>
+      <input class="form-input" id="senderEmail" value="alhasanim194@gmail.com" style="direction:ltr">
+    </div>
+    <button class="btn-primary" onclick="saveBackend()">💾 حفظ واختبار الخادم</button>
     <div id="backendStatus" style="margin-top:10px;font-size:12px"></div>
-    <div class="info-box info-cyan" style="margin-top:14px"><div class="ib-title">💡 لا تملك خادماً؟</div>
-      <div style="color:var(--text-dim)">انتقل لتبويب <b>الدليل الإرشادي</b> — الكود جاهز مع خطوات النشر المجاني خطوة بخطوة.</div></div>
+    <div class="info-box info-cyan" style="margin-top:14px">
+      <div class="ib-title">💡 لا تملك خادماً؟</div>
+      <div style="color:var(--text-dim)">انتقل لتبويب <b>"دليل التشغيل"</b> — كود الخادم جاهز مع خطوات النشر المجاني على Render أو Railway في 10 دقائق.</div>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-title" style="margin-bottom:6px">📱 واتساب</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رقم الشركة لإنشاء روابط wa.me — للإرسال التلقائي اربط WhatsApp Business API عبر الخادم</div>
-    <div class="form-group"><label>رقم واتساب الشركة</label><input class="form-input" id="waNumber" value="+966501815872" style="direction:ltr"></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رقم الشركة لإنشاء روابط wa.me. للإرسال التلقائي الكامل اربط WhatsApp Business API عبر الخادم</div>
+    <div class="form-group">
+      <label>رقم واتساب الشركة</label>
+      <input class="form-input" id="waNumber" value="+966501815872" style="direction:ltr">
+    </div>
     <button class="btn-primary" onclick="saveWA()">💾 حفظ</button>
     <div id="waStatus" style="margin-top:10px;font-size:12px"></div>
   </div>
@@ -704,106 +705,85 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
   <div class="card">
     <div class="card-title" style="margin-bottom:6px">🏢 بيانات شركتك (تُستخدم في توليد الرسائل)</div>
     <div class="form-group"><label>اسم الشركة</label><input class="form-input" id="myCompany" value="شركة محمد الحسني للنقليات (MTC)"></div>
-    <div class="form-group"><label>الخدمات الرئيسية</label><textarea class="form-textarea" id="myServices">نقل ثقيل، تريلات، رافعات، شاحنات، تخليص جمركي، نقل سيارات، شحن وتفريغ موانئ، خدمات لوجستية متكاملة</textarea></div>
-    <div class="form-group"><label>المزايا التنافسية</label><textarea class="form-textarea" id="myAdvantages">خبرة منذ 1433هـ، أسطول متنوع وحديث، تغطية كاملة للمملكة، شركاء كبار (بن لادن، نقوا، CCECC، السيف، الجهاز)، مرونة وسرعة استجابة</textarea></div>
-    <div class="form-group"><label>بيانات التواصل</label><input class="form-input" id="myContact" value="+966 50 181 5872 | +966 56 380 3931 | alhasanim194@gmail.com | جدة - الخمرة"></div>
-    <button class="btn-primary" onclick="saveCompanyData()">💾 حفظ</button>
+    <div class="form-group"><label>الخدمات الرئيسية</label>
+      <textarea class="form-textarea" id="myServices">نقل ثقيل، تريلات، رافعات، شاحنات، تخليص جمركي، نقل سيارات، شحن وتفريغ في الموانئ، خدمات لوجستية متكاملة</textarea></div>
+    <div class="form-group"><label>المزايا التنافسية</label>
+      <textarea class="form-textarea" id="myAdvantages">خبرة منذ 1433هـ، أسطول متنوع وحديث، تغطية كاملة للمملكة، شركاء كبار (بن لادن، نقوا، CCECC، السيف، الجهاز)، مرونة وسرعة استجابة</textarea></div>
+    <div class="form-group"><label>بيانات التواصل</label>
+      <input class="form-input" id="myContact" value="+966 50 181 5872 | +966 56 380 3931 | alhasanim194@gmail.com | جدة - الخمرة"></div>
+    <button class="btn-primary" onclick="saveCompanyData()">💾 حفظ بيانات الشركة</button>
     <div id="companyStatus" style="margin-top:10px;font-size:12px"></div>
   </div>
 
   <div class="card">
     <div class="card-title" style="margin-bottom:14px">🗑️ إدارة البيانات</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn-outline" onclick="exportData()">📥 تصدير كل البيانات</button>
-      <button class="btn-sm btn-danger" style="padding:9px 15px" onclick="clearAllData()">🗑️ مسح الكل</button>
+      <button class="btn-outline" onclick="exportData()">📥 تصدير كل البيانات (JSON)</button>
+      <button class="btn-sm btn-danger" style="padding:8px 15px" onclick="clearAllData()">🗑️ مسح كل البيانات</button>
     </div>
   </div>
 </div>
 
 <!-- DEPLOY GUIDE -->
-
 <div class="page" id="page-deploy">
-  <div class="page-header"><div class="page-title">📘 الدليل <span>الإرشادي الشامل</span></div>
-    <div class="page-sub">كل ما تحتاجه لتشغيل النظام حقيقياً 100% — اتبع الخطوات بالترتيب</div></div>
+  <div class="page-header">
+    <div class="page-title">📘 دليل <span>التشغيل الكامل</span></div>
+    <div class="page-sub">كل ما تحتاجه لتشغيل النظام بشكل حقيقي 100% — انسخ والصق فقط</div>
+  </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:16px">🗺️ كيف يعمل النظام</div>
+    <div class="card-title" style="margin-bottom:16px">🗺️ خريطة المعمارية</div>
     <div style="font-size:13px;line-height:2;color:var(--text-dim)">
       <b style="color:var(--gold)">الواجهة (هذا الملف):</b> تعمل في المتصفح — بحث وكتابة بالذكاء + تخزين دائم<br>
-      <b style="color:var(--gold)">المُحوّل الذكي:</b> يربط أي مزود AI تلقائياً ويتجاوز المشاكل<br>
-      <b style="color:var(--gold)">الخادم الخلفي:</b> يرسل البريد فعلياً + يتتبع الفتح + يستقبل الردود + ينفّذ الجدولة<br>
-      <b style="color:var(--gold)">مزود البيانات (اختياري):</b> يجلب شركات حقيقية ببياناتها وروابطها
+      <b style="color:var(--gold)">الخادم الخلفي (Node.js):</b> يرسل البريد فعلياً + يتتبع الفتح + يستقبل الردود + ينفّذ الجدولة<br>
+      <b style="color:var(--gold)">Anthropic API:</b> تحليل العملاء وكتابة الرسائل المخصصة<br>
+      <b style="color:var(--gold)">Google Places API:</b> (اختياري) جلب شركات حقيقية ببياناتها
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:16px">📋 خطوات التشغيل الكاملة</div>
+    <div class="card-title" style="margin-bottom:16px">📋 خطوات التشغيل</div>
     <div class="step"><div><span class="step-num">1</span></div><div class="step-content">
-      <h4>اختر واربط مزود الذكاء الاصطناعي</h4>
-      <p>اذهب لـ <b>الإعدادات ← مزود الذكاء الاصطناعي</b>. اختر أي مزود تملك مفتاحه (OpenAI أو Claude أو Gemini أو Groq أو DeepSeek أو OpenRouter أو مخصص). ألصق المفتاح واضغط <code>حفظ واختبار</code>. النظام سيكتشف البروتوكول الصحيح تلقائياً.</p>
+      <h4>احصل على مفتاح Anthropic</h4>
+      <p>سجّل في console.anthropic.com → API Keys → Create Key → انسخه والصقه في الإعدادات. هذا وحده يكفي لتشغيل البحث والكتابة بالذكاء.</p>
     </div></div>
     <div class="step"><div><span class="step-num">2</span></div><div class="step-content">
-      <h4>من أين أحصل على مفتاح API؟</h4>
-      <p><b>OpenAI:</b> platform.openai.com/api-keys · <b>Claude:</b> console.anthropic.com · <b>Gemini:</b> aistudio.google.com/apikey · <b>Groq (مجاني):</b> console.groq.com · <b>OpenRouter:</b> openrouter.ai/keys · <b>DeepSeek:</b> platform.deepseek.com</p>
+      <h4>انشر الخادم الخلفي (للإرسال الفعلي)</h4>
+      <p>انسخ كود الخادم أدناه، ارفعه على GitHub، ثم انشره مجاناً على Render.com أو Railway.app. خذ الرابط وضعه في الإعدادات.</p>
     </div></div>
     <div class="step"><div><span class="step-num">3</span></div><div class="step-content">
-      <h4>ابحث عن العملاء</h4>
-      <p>اذهب لـ <b>بحث ذكي متقدم</b> ← اختر مجال عملك ← اختر القطاعات المستهدفة (جزئياً أو كلياً) ← اضبط الخيارات ← فعّل <b>الاستيراد التلقائي</b> إن رغبت ← اضغط بحث. ستظهر الشركات ببياناتها وروابطها.</p>
-    </div></div>
-    <div class="step"><div><span class="step-num">4</span></div><div class="step-content">
-      <h4>انشر الخادم الخلفي (للإرسال الفعلي)</h4>
-      <p>انسخ كود الخادم أدناه ← ارفعه على GitHub ← انشره مجاناً على <b>Render.com</b> أو <b>Railway.app</b>: New → Web Service → اربط المستودع → Build: <code>npm install</code> → Start: <code>npm start</code> → أضف متغيرات البيئة → انشر. خذ الرابط وضعه في الإعدادات.</p>
-    </div></div>
-    <div class="step"><div><span class="step-num">5</span></div><div class="step-content">
       <h4>فعّل كلمة مرور تطبيق Gmail</h4>
-      <p>حساب Google → الأمان → فعّل <b>التحقق بخطوتين</b> → <b>كلمات مرور التطبيقات</b> → أنشئ كلمة (16 حرف) → ضعها في متغير <code>SMTP_PASS</code> بالخادم.</p>
+      <p>حساب Google → الأمان → التحقق بخطوتين → كلمات مرور التطبيقات → أنشئ واحدة وضعها في متغيرات بيئة الخادم.</p>
     </div></div>
-    <div class="step"><div><span class="step-num">6</span></div><div class="step-content">
+    <div class="step" style="border:none"><div><span class="step-num">4</span></div><div class="step-content">
       <h4>ابدأ الحملات</h4>
-      <p>اختر العملاء ← <b>الحملات</b> ← اختر بريد أو واتساب ← اضبط الحماية ← نفّذ. سيولّد رسالة مخصصة لكل شركة، يتتبع الفتح، ويعيد الإرسال تلقائياً لمن لم يفتح.</p>
-    </div></div>
-    <div class="step"><div><span class="step-num">7</span></div><div class="step-content">
-      <h4>تابع وحلّل</h4>
-      <p>من <b>التحليلات</b> راقب معدلات الفتح والرد، ومن <b>الوارد</b> رد على العملاء، ومن <b>الجدولة</b> اضبط سلسلة المتابعة التلقائية.</p>
-    </div></div>
-    <div class="step" style="border:none"><div><span class="step-num">8</span></div><div class="step-content">
-      <h4>حل المشكلات الشائعة</h4>
-      <p><b>401:</b> مفتاح خاطئ، أعد نسخه. <b>429:</b> تجاوزت الحد، انتظر أو بدّل المزود. <b>CORS:</b> بعض المزودات تمنع الاستدعاء من المتصفح — استخدم خادمك كوسيط (الكود يدعمه عبر <code>/api/ai</code>). <b>مهلة:</b> النظام يعيد المحاولة تلقائياً مرتين.</p>
+      <p>ابحث عن العملاء → ولّد الرسائل → نفّذ الحملة. سيتتبع النظام الفتح ويعيد الإرسال تلقائياً.</p>
     </div></div>
   </div>
 
   <div class="card">
     <div class="card-header"><div class="card-title">🖥️ كود الخادم الخلفي <span>(server.js)</span></div>
-      <button class="copy-code-btn" onclick="copyCode('serverCode','كود الخادم')">📋 نسخ</button></div>
+      <button class="copy-code-btn" onclick="copyServerCode()">📋 نسخ الكود</button></div>
     <div class="code-block" id="serverCode"></div>
   </div>
+
   <div class="card">
-    <div class="card-header"><div class="card-title">📦 <span>package.json</span></div>
-      <button class="copy-code-btn" onclick="copyCode('pkgCode','الحزم')">📋 نسخ</button></div>
+    <div class="card-header"><div class="card-title">📦 ملف <span>package.json</span></div>
+      <button class="copy-code-btn" onclick="copyPkg()">📋 نسخ</button></div>
     <div class="code-block" id="pkgCode"></div>
   </div>
+
   <div class="card">
     <div class="card-header"><div class="card-title">🔐 متغيرات البيئة <span>(.env)</span></div>
-      <button class="copy-code-btn" onclick="copyCode('envCode','المتغيرات')">📋 نسخ</button></div>
+      <button class="copy-code-btn" onclick="copyEnv()">📋 نسخ</button></div>
     <div class="code-block" id="envCode"></div>
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:8px">🧠 برومبت تحليل <span>العملاء المحتملين</span></div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">البرومبت الاحترافي المدمج لتوجيه الذكاء الاصطناعي في استخراج وتقييم العملاء:</div>
-    <div class="card-header" style="margin-bottom:8px"><div></div><button class="copy-code-btn" onclick="copyCode('promptSearch','برومبت البحث')">📋 نسخ</button></div>
-    <div class="code-block" id="promptSearch" style="white-space:pre-wrap;direction:rtl;text-align:right;color:#d8e6f5"></div>
-  </div>
-  <div class="card">
-    <div class="card-title" style="margin-bottom:8px">✍️ برومبت كتابة <span>الرسائل</span></div>
-    <div class="card-header" style="margin-bottom:8px"><div></div><button class="copy-code-btn" onclick="copyCode('promptMsg','برومبت الرسائل')">📋 نسخ</button></div>
-    <div class="code-block" id="promptMsg" style="white-space:pre-wrap;direction:rtl;text-align:right;color:#d8e6f5"></div>
-  </div>
-  <div class="card">
-    <div class="card-title" style="margin-bottom:8px">🔌 برومبت توجيهي: <span>طريقة دمج المُحوّل الذكي</span></div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">شرح تقني لطريقة عمل طبقة الربط ودمجها — مفيد لو أردت تطوير النظام لاحقاً:</div>
-    <div class="card-header" style="margin-bottom:8px"><div></div><button class="copy-code-btn" onclick="copyCode('promptAdapter','برومبت الدمج')">📋 نسخ</button></div>
-    <div class="code-block" id="promptAdapter" style="white-space:pre-wrap;direction:rtl;text-align:right;color:#d8e6f5"></div>
+    <div class="card-title" style="margin-bottom:14px">🧠 البرومبت التوجيهي <span>الاحترافي</span></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">هذا البرومبت المدمج في النظام — مكتوب باحترافية ليوجّه Claude لتحليل العملاء وكتابة رسائل عالية التحويل دون حظر:</div>
+    <div class="card-header" style="margin-bottom:8px"><div></div><button class="copy-code-btn" onclick="copyPrompt()">📋 نسخ البرومبت</button></div>
+    <div class="code-block" id="promptCode" style="white-space:pre-wrap;direction:rtl;text-align:right;color:#d8e6f5"></div>
   </div>
 </div>
 
@@ -811,390 +791,215 @@ font-size:18px;font-weight:800;flex-shrink:0;background:var(–navy-light);borde
 </div>
 
 <div class="modal-overlay" id="leadModal">
-  <div class="modal"><button class="modal-close" onclick="closeModal('leadModal')">✕</button>
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('leadModal')">✕</button>
     <div class="modal-title" id="modalTitle">تفاصيل <span>العميل</span></div>
-    <div id="modalBody"></div></div>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ==================== STORAGE ====================
-const DB={
-  async get(k,d=null){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):d;}catch(e){return d;}},
-  async set(k,v){try{await window.storage.set(k,JSON.stringify(v));return true;}catch(e){return false;}},
-  async del(k){try{await window.storage.delete(k);}catch(e){}}
-};
-const APP={config:{},leads:[],inbox:[],campaigns:[],searchResults:[]};
-
-// ==================== AI PROVIDERS REGISTRY ====================
-const PROVIDERS={
-  openai:{name:'OpenAI',logo:'AI',color:'#10a37f',proto:'openai',
-    endpoint:'https://api.openai.com/v1/chat/completions',model:'gpt-4o',
-    desc:'GPT-4o · GPT-4 · أشهر مزود'},
-  anthropic:{name:'Anthropic Claude',logo:'C',color:'#caa84d',proto:'anthropic',
-    endpoint:'https://api.anthropic.com/v1/messages',model:'claude-sonnet-4-20250514',
-    desc:'Claude Sonnet/Opus · جودة عالية'},
-  gemini:{name:'Google Gemini',logo:'G',color:'#4285f4',proto:'gemini',
-    endpoint:'https://generativelanguage.googleapis.com/v1beta/models',model:'gemini-2.0-flash',
-    desc:'Gemini 2.0 · سريع واقتصادي'},
-  groq:{name:'Groq',logo:'⚡',color:'#f55036',proto:'openai',
-    endpoint:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.3-70b-versatile',
-    desc:'سريع جداً · طبقة مجانية'},
-  deepseek:{name:'DeepSeek',logo:'D',color:'#4d6bfe',proto:'openai',
-    endpoint:'https://api.deepseek.com/v1/chat/completions',model:'deepseek-chat',
-    desc:'اقتصادي · أداء قوي'},
-  openrouter:{name:'OpenRouter',logo:'OR',color:'#8b5cf6',proto:'openai',
-    endpoint:'https://openrouter.ai/api/v1/chat/completions',model:'openai/gpt-4o',
-    desc:'بوابة لكل الموديلات'},
-  mistral:{name:'Mistral AI',logo:'M',color:'#fa520f',proto:'openai',
-    endpoint:'https://api.mistral.ai/v1/chat/completions',model:'mistral-large-latest',
-    desc:'أوروبي · خصوصية عالية'},
-  custom:{name:'مزود مخصص',logo:'⚙️',color:'#8295bb',proto:'openai',
-    endpoint:'',model:'',desc:'أي مزود متوافق مع OpenAI'}
+// ==================== PERSISTENT STORAGE LAYER ====================
+const DB = {
+  async get(key, def=null) {
+    try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : def; }
+    catch(e) { return def; }
+  },
+  async set(key, val) {
+    try { await window.storage.set(key, JSON.stringify(val)); return true; }
+    catch(e) { console.error(e); return false; }
+  },
+  async del(key) { try { await window.storage.delete(key); } catch(e){} }
 };
 
-// ==================== DOMAINS & SECTORS ====================
-const DOMAINS={
-  logistics:{icon:'🚛',name:'النقل واللوجستيات',desc:'نقل وشحن وتخليص',
-    sectors:['شركات البناء والمقاولات الكبرى','شركات النفط والغاز والحفر','المصانع والشركات الصناعية','الموانئ ومحطات الحاويات','شركات المقاولات والبنية التحتية','مستوردي ومصدري البضائع الثقيلة','شركات الأغذية والمشروبات الكبرى','شركات الأدوية والمستلزمات الطبية','معارض ووكالات السيارات','شركات المعدات والآليات الثقيلة']},
-  construction:{icon:'🏗️',name:'البناء والمقاولات',desc:'مشاريع وإنشاءات',
-    sectors:['المطورين العقاريين الكبار','شركات الإسمنت والخرسانة','موردي مواد البناء','الجهات الحكومية للمشاريع','شركات الحديد والصلب','مصانع الأبواب والنوافذ','شركات الكهرباء والميكانيكا','شركات التشطيبات والديكور']},
-  retail:{icon:'🏪',name:'التجارة والتجزئة',desc:'متاجر وموزعين',
-    sectors:['سلاسل المتاجر الكبرى','موزعي الجملة','المتاجر الإلكترونية','مستوردي السلع الاستهلاكية','شركات التوزيع والإمداد','الأسواق المركزية','وكلاء الماركات العالمية']},
-  industrial:{icon:'🏭',name:'الصناعة والمصانع',desc:'إنتاج وتصنيع',
-    sectors:['مصانع البتروكيماويات','مصانع الأغذية','مصانع البلاستيك والتغليف','المصانع الكيميائية','مصانع المعادن','مصانع النسيج','المناطق الصناعية','مصانع الأسمدة']},
-  food:{icon:'🍽️',name:'الأغذية والمطاعم',desc:'إمداد غذائي',
-    sectors:['سلاسل المطاعم الكبرى','شركات التموين والكاترينج','موزعي المواد الغذائية','مصانع الألبان','شركات اللحوم والدواجن','مخازن التبريد','أسواق الخضار والفواكه']},
-  agri:{icon:'🌾',name:'الزراعة والاستزراع',desc:'مزارع وإنتاج',
-    sectors:['الشركات الزراعية الكبرى','شركات الاستزراع المائي','موردي الأعلاف','شركات المبيدات والأسمدة','مزارع الدواجن','شركات التمور','شركات البذور']},
-  health:{icon:'🏥',name:'الصحة والأدوية',desc:'طبي ودوائي',
-    sectors:['المستشفيات الكبرى','شركات الأدوية','موزعي المستلزمات الطبية','مصانع الأجهزة الطبية','مختبرات التحاليل','الصيدليات الكبرى']},
-  energy:{icon:'⚡',name:'الطاقة والمرافق',desc:'كهرباء ومياه',
-    sectors:['شركات الكهرباء','شركات المياه والتحلية','شركات الطاقة المتجددة','شركات الغاز','مشاريع البنية التحتية للطاقة']},
-  govt:{icon:'🏛️',name:'القطاع الحكومي',desc:'وزارات وهيئات',
-    sectors:['الوزارات والهيئات','البلديات والأمانات','المشاريع الحكومية الكبرى','الجامعات والمدارس','المؤسسات العسكرية والأمنية','صناديق التنمية']},
-  general:{icon:'🌐',name:'عام / متعدد',desc:'كل القطاعات',
-    sectors:['الشركات الكبرى متعددة الأنشطة','الشركات المتوسطة الناشئة','المؤسسات التجارية','الشركات العائلية الكبيرة']}
-};
-let selectedDomain=null, selectedSectors=new Set();
+const APP = { config:{}, leads:[], inbox:[], campaigns:[] };
 
-// ==================== PROMPTS ====================
-const SEARCH_PROMPT=(domain,sectors,city,size,count,minScore,company)=>`أنت محلل تطوير أعمال خبير في السوق السعودي والخليجي، تعمل لصالح "${company}" (شركة نقل لوجستي وتخليص جمركي).
+// ==================== AI PROMPT ENGINE ====================
+const SEARCH_PROMPT = (sector, city, count, minScore, company) => `أنت محلل تطوير أعمال خبير في قطاع النقل اللوجستي السعودي، تعمل لصالح "${company}".
 
-== المهمة ==
-استخرج قائمة بأكثر العملاء المحتملين احتمالاً للاهتمام بخدمات النقل الثقيل والتخليص الجمركي والخدمات اللوجستية.
+مهمتك: استخراج قائمة بأكثر العملاء المحتملين احتمالاً للاهتمام بخدمات النقل الثقيل والتخليص الجمركي.
 
-== معايير الاستهداف ==
-- مجال العميل: ${domain}
-- القطاعات المطلوبة: ${sectors}
+معايير الاستهداف:
+- القطاع: ${sector}
 - المنطقة: ${city}
-- حجم الشركات: ${size}
 - العدد المطلوب: ${count} عميل على الأقل
 - الحد الأدنى لنسبة الاهتمام: ${minScore}%
 
-== التقييم ==
-لكل عميل احسب interest_score (0-100) بناءً على:
-1. حجم احتياج نشاطه لخدمات النقل الثقيل (40%)
-2. تكرار حاجته للتخليص الجمركي والشحن (25%)
-3. حجم الشركة وقدرتها التعاقدية (20%)
+لكل عميل محتمل قدّم تقييماً واقعياً لنسبة الاهتمام (interest_score من 0 إلى 100) بناءً على:
+1. حجم احتياج القطاع لخدمات النقل الثقيل (40%)
+2. تكرار الحاجة للتخليص الجمركي والشحن (25%)
+3. حجم الشركة وقدرتها على التعاقد (20%)
 4. سهولة الوصول لصانع القرار (15%)
 
-رتّب تنازلياً من الأعلى احتمالاً للأقل.
+رتّب القائمة تنازلياً من الأعلى احتمالاً للأقل.
 
-== صيغة الإخراج ==
-أرجع JSON صالحاً فقط دون أي نص أو markdown:
-{"leads":[{"name":"اسم الشركة","sector":"النشاط","city":"المدينة","email":"بريد مؤسسي واقعي","phone":"+966...","website":"رابط الموقع أو نطاق الشركة","interest_score":85,"reason":"سبب التقييم في جملة"}]}
+أرجع النتيجة بصيغة JSON صالحة فقط دون أي نص إضافي أو علامات markdown، بالشكل:
+{"leads":[{"name":"اسم الشركة","sector":"النشاط","city":"المدينة","email":"بريد تقديري واقعي","phone":"+966...","interest_score":85,"reason":"سبب التقييم في جملة"}]}
 
-== ملاحظات مهمة ==
-- قدّم شركات حقيقية معروفة في السوق ضمن القطاعات المحددة متى أمكن.
-- لكل شركة أضف website (الموقع الرسمي أو النطاق المتوقع مثل company.com.sa).
-- إن لم تتوفر بيانات تواصل مؤكدة، استخدم صيغة مؤسسية منطقية (info@/procurement@) واجعل التقييم يعكس درجة اليقين.
-- لا تكرر نفس الشركة. نوّع بين الكبرى والمتوسطة حسب الحجم المطلوب.`;
+ملاحظة مهمة: قدّم شركات حقيقية معروفة في السوق السعودي ضمن القطاع المحدد متى أمكن. إن لم تتوفر بيانات تواصل مؤكدة، اقترح صيغة بريد مؤسسي منطقية (info@ أو procurement@) ووضّح ذلك ضمناً عبر إعطاء التقييم وزناً يعكس عدم اليقين.`;
 
-const MSG_PROMPT=(d)=>`أنت مدير تطوير أعمال محترف ومقنع في شركة "${d.myCompany}".
+const MESSAGE_PROMPT = (data) => `أنت مدير تطوير أعمال محترف ومقنع في شركة "${data.myCompany}".
 
-== شركتنا ==
-الخدمات: ${d.myServices}
-المزايا: ${d.myAdvantages}
-التواصل: ${d.myContact}
+== بيانات شركتنا ==
+الخدمات: ${data.myServices}
+المزايا التنافسية: ${data.myAdvantages}
+التواصل: ${data.myContact}
 
 == العميل المستهدف ==
-الشركة: ${d.company}
-النشاط: ${d.sector}
-${d.note?'ملاحظة: '+d.note:''}
+الشركة: ${data.company}
+القطاع/النشاط: ${data.sector}
+${data.note ? 'ملاحظة خاصة: ' + data.note : ''}
 
-== نوع الرسالة ==
-${d.typeLabel}
+== نوع الرسالة المطلوبة ==
+${data.typeLabel}
 
 == اللغة ==
-${d.langInstr}
+${data.langInstr}
 
-اكتب رسالة بريد احترافية عالية التحويل وفق هذه القواعد:
-1. أول سطر: "الموضوع: ..." مخصص لاسم الشركة وغير دعائي (لتفادي السبام).
-2. تحية شخصية تذكر اسم الشركة.
-3. جملة افتتاحية تربط نشاط الشركة باحتياجها الفعلي لخدماتنا (أظهر فهمك لأعمالهم).
-4. خدمتان-ثلاث من خدماتنا الأكثر صلة بقطاعهم تحديداً (لا تذكر كل الخدمات).
-5. دليل ثقة واحد قصير (شريك كبير أو سنوات خبرة).
-6. دعوة واضحة محددة (اجتماع 15 دقيقة / مكالمة / طلب عرض).
+اكتب رسالة بريد إلكتروني احترافية مقنعة عالية التحويل وفق هذه القواعد الصارمة:
+1. سطر الموضوع: اكتبه في أول سطر بصيغة "الموضوع: ..." — يجب أن يكون مخصصاً لاسم الشركة وغير دعائي (لتجنب فلاتر السبام).
+2. تحية شخصية تذكر اسم الشركة المستهدفة تحديداً.
+3. جملة افتتاحية تربط بين نشاط الشركة المستهدفة واحتياجها الفعلي لخدماتنا (أظهر أنك فهمت أعمالهم).
+4. اذكر خدمتين أو ثلاثاً من خدماتنا الأكثر صلة بقطاع هذا العميل تحديداً — لا تذكر كل الخدمات.
+5. دليل ثقة واحد قصير (شريك كبير أو سنوات الخبرة).
+6. دعوة واضحة ومحددة لاتخاذ إجراء (اجتماع 15 دقيقة / مكالمة / طلب عرض).
 7. توقيع رسمي باسم إدارة تطوير الأعمال مع بيانات التواصل.
 
-قيود لمنع الحظر والرفض:
-- تجنّب كلمات السبام (مجاني، حصري، اضغط الآن، عاجل، اربح).
+قيود مهمة لمنع الحظر والرفض:
+- تجنب الكلمات المحفّزة للسبام (مجاني، عرض حصري، اضغط الآن، عاجل، اربح).
 - لا مبالغة ولا وعود مطلقة. نبرة مهنية واثقة هادئة.
-- الطول: 130-190 كلمة (عدا الموضوع).
-- لا شرح أو تعليق خارج نص الرسالة والموضوع.`;
+- الطول: 130-190 كلمة فقط للنص (عدا الموضوع).
+- لا تضف أي شرح أو تعليق خارج نص الرسالة والموضوع.`;
 
-const ADAPTER_PROMPT=`=== برومبت توجيهي: طبقة الربط الذكية (Smart AI Adapter) ===
-
-الهدف: ربط النظام بأي مزود ذكاء اصطناعي دون حصره في مزود واحد، مع التأقلم التلقائي وتجاوز المشاكل.
-
-آلية العمل:
-1) كشف البروتوكول: لكل مزود "proto" من ثلاثة:
-   - openai: POST /chat/completions، الرأس Authorization: Bearer KEY، الجسم {model, messages:[{role,content}]}، الرد choices[0].message.content
-   - anthropic: POST /v1/messages، الرؤوس x-api-key + anthropic-version، الجسم {model, max_tokens, messages}، الرد content[].text
-   - gemini: POST /models/MODEL:generateContent?key=KEY، الجسم {contents:[{parts:[{text}]}]}، الرد candidates[0].content.parts[0].text
-2) الموحّد callAI(prompt): يبني الطلب حسب البروتوكول، يرسله، يستخرج النص بطريقة موحّدة.
-3) معالجة الأخطاء:
-   - 401/403: مفتاح خاطئ → رسالة واضحة للمستخدم
-   - 429: تجاوز الحد → إعادة محاولة بعد تأخير (backoff) ثم اقتراح تبديل المزود
-   - 5xx/timeout: إعادة محاولة تلقائية مرتين بمهلة متصاعدة
-   - CORS: إن فشل الاستدعاء المباشر من المتصفح، يحوّل عبر الخادم الخلفي /api/ai كوسيط (proxy)
-4) المزود المخصص: المستخدم يدخل endpoint وmodel ويُعامل كـ openai-compatible.
-5) الاختبار: عند الحفظ يرسل طلباً تجريبياً قصيراً ويؤكد النجاح قبل الاعتماد.
-
-طريقة الدمج في الموقع:
-- جدول PROVIDERS يحوي لكل مزود: endpoint, model, proto, الوصف.
-- callAI() دالة واحدة يستدعيها كل النظام (البحث، الرسائل، الردود) — لا تتغير عند تبديل المزود.
-- الإعدادات تحفظ provider+key+model+endpoint في تخزين دائم وتستعيدها.
-- الخادم الخلفي يوفّر /api/ai كوسيط اختياري لتجاوز CORS وحماية المفتاح.`;
-
-// ==================== SMART AI ADAPTER ====================
-async function callAI(prompt,maxTokens=2000){
-  const cfg=APP.config;
-  const prov=cfg.aiProvider, key=cfg.aiKey, model=cfg.aiModel, endpoint=cfg.aiEndpoint;
-  if(!prov||!key) return {ok:false,error:'no_key'};
-  const proto=(PROVIDERS[prov]||{}).proto||'openai';
-  const ep=endpoint||(PROVIDERS[prov]||{}).endpoint;
-  if(!ep) return {ok:false,error:'no_endpoint'};
-
-  let attempt=0;
-  while(attempt<3){
-    attempt++;
-    try{
-      let url=ep, headers={'Content-Type':'application/json'}, body;
-      if(proto==='openai'){
-        headers['Authorization']='Bearer '+key;
-        if(prov==='openrouter'){headers['HTTP-Referer']='https://mtc-sales.app';headers['X-Title']='MTC Sales';}
-        body=JSON.stringify({model:model||'gpt-4o',messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:0.7});
-      } else if(proto==='anthropic'){
-        headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
-        headers['anthropic-dangerous-direct-browser-access']='true';
-        body=JSON.stringify({model:model||'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]});
-      } else if(proto==='gemini'){
-        url=ep.replace(/\/$/,'')+'/'+(model||'gemini-2.0-flash')+':generateContent?key='+encodeURIComponent(key);
-        body=JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens}});
-      }
-      const ctrl=new AbortController();
-      const tid=setTimeout(()=>ctrl.abort(),45000);
-      const resp=await fetch(url,{method:'POST',headers,body,signal:ctrl.signal});
-      clearTimeout(tid);
-
-      if(resp.status===401||resp.status===403) return {ok:false,error:'auth',detail:'مفتاح API غير صالح أو منتهي'};
-      if(resp.status===429){ if(attempt<3){await sleep(1500*attempt);continue;} return {ok:false,error:'rate',detail:'تجاوزت حد الاستخدام — جرّب لاحقاً أو بدّل المزود'}; }
-      if(resp.status>=500){ if(attempt<3){await sleep(1000*attempt);continue;} return {ok:false,error:'server',detail:'خطأ من خادم المزود'}; }
-      if(!resp.ok){ const t=await resp.text(); return {ok:false,error:'api',detail:t.slice(0,200)}; }
-
-      const data=await resp.json();
-      let text='';
-      if(proto==='openai') text=data.choices?.[0]?.message?.content||'';
-      else if(proto==='anthropic') text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-      else if(proto==='gemini') text=data.candidates?.[0]?.content?.parts?.map(p=>p.text).join('')||'';
-      if(!text) return {ok:false,error:'empty',detail:'رد فارغ من المزود'};
-      return {ok:true,text};
-    }catch(e){
-      const msg=String(e);
-      // CORS / network → try backend proxy
-      if(APP.config.backendUrl && attempt>=2){
-        try{
-          const r=await fetch(APP.config.backendUrl.replace(/\/$/,'')+'/api/ai',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({provider:prov,key,model,endpoint:ep,proto,prompt,maxTokens})});
-          if(r.ok){const d=await r.json();if(d.text)return {ok:true,text:d.text};}
-        }catch(_){}
-      }
-      if(msg.includes('abort')){ if(attempt<3){await sleep(800);continue;} return {ok:false,error:'timeout',detail:'انتهت المهلة'}; }
-      if(attempt<3){await sleep(800*attempt);continue;}
-      return {ok:false,error:'network',detail:'تعذّر الاتصال (قد يكون حظر CORS — استخدم الخادم الخلفي كوسيط)'};
-    }
-  }
-  return {ok:false,error:'failed'};
+// ==================== ANTHROPIC API CALL ====================
+async function callClaude(prompt, maxTokens=2000) {
+  const key = APP.config.anthropicKey;
+  const model = APP.config.anthropicModel || 'claude-sonnet-4-20250514';
+  if (!key || !key.startsWith('sk-ant')) return { ok:false, error:'no_key' };
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model, max_tokens:maxTokens, messages:[{role:'user',content:prompt}] })
+    });
+    if (!resp.ok) { const t = await resp.text(); return { ok:false, error:'api_error', detail:t }; }
+    const data = await resp.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    return { ok:true, text };
+  } catch(e) { return { ok:false, error:'network', detail:String(e) }; }
 }
 
 // ==================== NAVIGATION ====================
-function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
-}
-function openPage(page){
+function openPage(page) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.getElementById('nav-'+page)?.classList.add('active');
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('open');
-  window.scrollTo(0,0);
-  if(page==='leads')renderLeadsList();
-  if(page==='inbox')renderInbox();
-  if(page==='analytics')renderAnalytics();
-  if(page==='dashboard'){renderDashboardCharts();renderDashSchedule();refreshStats();}
-  if(page==='compose')populateClientSelect();
-  if(page==='campaigns')document.getElementById('campaignPanel').style.display='none';
-  if(page==='deploy')renderDeployCode();
-  if(page==='search'&&!selectedDomain)renderDomains();
-}
-
-// ==================== DOMAIN/SECTOR PICKER ====================
-function renderDomains(){
-  document.getElementById('domainGrid').innerHTML=Object.entries(DOMAINS).map(([k,d])=>
-    `<div class="domain-card ${selectedDomain===k?'selected':''}" onclick="pickDomain('${k}')">
-      <div class="di">${d.icon}</div><div class="dn">${d.name}</div><div class="dd">${d.desc}</div></div>`).join('');
-}
-function pickDomain(k){
-  selectedDomain=k;selectedSectors.clear();
-  renderDomains();
-  const d=DOMAINS[k];
-  document.getElementById('sectorChips').innerHTML=d.sectors.map((s,i)=>
-    `<span class="sector-chip" id="sec-${i}" onclick="toggleSector(${i},'${s.replace(/'/g,"\\'")}')">
-      <span class="sc-check"></span>${s}</span>`).join('');
-  document.getElementById('step2Card').style.display='block';
-  document.getElementById('step3Card').style.display='none';
-  document.getElementById('step2Card').scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function toggleSector(i,name){
-  const el=document.getElementById('sec-'+i);
-  if(selectedSectors.has(name)){selectedSectors.delete(name);el.classList.remove('selected');el.querySelector('.sc-check').textContent='';}
-  else{selectedSectors.add(name);el.classList.add('selected');el.querySelector('.sc-check').textContent='✓';}
-  document.getElementById('step3Card').style.display=selectedSectors.size>0?'block':'none';
-}
-function selectAllSectors(){
-  DOMAINS[selectedDomain].sectors.forEach((s,i)=>{selectedSectors.add(s);
-    const el=document.getElementById('sec-'+i);if(el){el.classList.add('selected');el.querySelector('.sc-check').textContent='✓';}});
-  document.getElementById('step3Card').style.display='block';showToast('تم تحديد كل القطاعات');
-}
-function clearSectors(){
-  selectedSectors.clear();
-  document.querySelectorAll('.sector-chip').forEach(el=>{el.classList.remove('selected');el.querySelector('.sc-check').textContent='';});
-  document.getElementById('step3Card').style.display='none';
+  if(page==='leads') renderLeadsList();
+  if(page==='inbox') renderInbox();
+  if(page==='analytics') { renderAnalytics(); }
+  if(page==='dashboard') { renderDashboardCharts(); renderDashSchedule(); refreshStats(); }
+  if(page==='compose') populateClientSelect();
+  if(page==='campaigns') document.getElementById('campaignPanel').style.display='none';
+  if(page==='deploy') renderDeployCode();
 }
 
 // ==================== AI SEARCH ====================
-async function startAISearch(){
-  if(selectedSectors.size===0){showToast('⚠️ اختر قطاعاً واحداً على الأقل');return;}
-  const domain=DOMAINS[selectedDomain].name;
-  const sectors=[...selectedSectors].join('، ');
-  const city=document.getElementById('cityFilter').value;
-  const size=document.getElementById('sizeFilter').value;
-  const minScore=parseInt(document.getElementById('scoreThreshold').value);
-  const count=Math.max(20,parseInt(document.getElementById('leadsMin').value)||20);
-  const autoImport=document.getElementById('autoImportToggle').checked;
+async function startAISearch() {
+  const sector = document.getElementById('sectorFilter').value;
+  const city = document.getElementById('cityFilter').value;
+  const minScore = parseInt(document.getElementById('scoreThreshold').value);
+  const count = Math.max(20, parseInt(document.getElementById('leadsMin').value)||20);
 
   document.getElementById('aiLoader').classList.add('active');
   document.getElementById('searchResults').style.display='none';
   document.getElementById('searchBtn').disabled=true;
 
-  const steps=['يحلل القطاعات المختارة...','يبحث عن شركات في '+city+'...','يقيّم نسبة الاهتمام...','يجلب الروابط والبيانات...','يرتب حسب الأولوية...'];
-  let si=0,prog=0;
-  const tick=setInterval(()=>{prog=Math.min(prog+Math.random()*14+4,95);
+  const steps=['يحلل القطاع المستهدف...','يبحث عن شركات في '+city+'...','يقيّم نسبة الاهتمام لكل شركة...','يرتب حسب الأولوية...','يجهّز بيانات التواصل...'];
+  let si=0, prog=0;
+  const tick=setInterval(()=>{
+    prog=Math.min(prog+Math.random()*15+4,95);
     if(si<steps.length){document.getElementById('aiLoaderText').textContent=steps[si];si++;}
     document.getElementById('aiProgress').style.width=prog+'%';
-    document.getElementById('aiProgressNum').textContent=Math.round(prog)+'%';},520);
+    document.getElementById('aiProgressNum').textContent=Math.round(prog)+'%';
+  },500);
 
-  let leads=[],isReal=false;
-  const company=APP.config.myCompany||'شركة محمد للنقليات';
-  const res=await callAI(SEARCH_PROMPT(domain,sectors,city,size,count,minScore,company),4000);
+  let leads=[], isReal=false;
+  const company = APP.config.myCompany || 'شركة محمد للنقليات';
+  const result = await callClaude(SEARCH_PROMPT(sector, city, count, minScore, company), 4000);
 
-  if(res.ok){
-    try{
-      let txt=res.text.trim().replace(/```json|```/g,'').trim();
-      const m=txt.match(/\{[\s\S]*\}/);if(m)txt=m[0];
-      const parsed=JSON.parse(txt);
-      leads=(parsed.leads||[]).map(l=>({
-        name:l.name,sector:l.sector||sectors,city:l.city||city,
-        email:l.email||'info@company.com.sa',phone:l.phone||'+966500000000',
-        website:l.website||'',score:Math.round(l.interest_score||l.score||50),
-        reason:l.reason||'',status:'pending',last:'—',real:true
+  if(result.ok) {
+    try {
+      let txt = result.text.trim().replace(/```json|```/g,'').trim();
+      const m = txt.match(/\{[\s\S]*\}/);
+      if(m) txt = m[0];
+      const parsed = JSON.parse(txt);
+      leads = (parsed.leads||[]).map(l=>({
+        name:l.name, sector:l.sector||sector, city:l.city||city,
+        email:l.email||'info@company.com.sa', phone:l.phone||'+966500000000',
+        score:Math.round(l.interest_score||l.score||50), reason:l.reason||'',
+        status:'pending', last:'—', real:true
       })).filter(l=>l.score>=minScore).sort((a,b)=>b.score-a.score);
-      if(leads.length>0)isReal=true;
-    }catch(e){console.warn('parse',e);}
-  } else if(res.error==='auth'||res.error==='rate'){
-    clearInterval(tick);
-    document.getElementById('aiLoader').classList.remove('active');
-    document.getElementById('searchBtn').disabled=false;
-    showToast('⚠️ '+(res.detail||'مشكلة في مزود الذكاء — تحقق من الإعدادات'));
+      if(leads.length>0) isReal=true;
+    } catch(e) { console.warn('parse failed', e); }
   }
 
-  if(leads.length<count){
-    leads=leads.concat(genDemo(sectors,city,count-leads.length,minScore)).slice(0,Math.max(count,20));
+  if(leads.length<count) {
+    const demo = generateDemoLeads(sector, city, count-leads.length, minScore);
+    leads = leads.concat(demo).slice(0, Math.max(count,20));
   }
 
   clearInterval(tick);
   document.getElementById('aiProgress').style.width='100%';
   document.getElementById('aiProgressNum').textContent='100%';
 
-  setTimeout(async()=>{
+  setTimeout(()=>{
     document.getElementById('aiLoader').classList.remove('active');
     document.getElementById('aiProgress').style.width='0%';
     document.getElementById('searchBtn').disabled=false;
-    APP.searchResults=leads;
+    APP.searchResults = leads;
     document.getElementById('resultsCount').textContent=leads.length;
     const mode=document.getElementById('resultMode');
-    if(isReal){mode.className='tag tag-real';mode.textContent='✓ بحث ذكاء اصطناعي حقيقي';}
-    else{mode.className='tag tag-demo';mode.textContent='تجريبي — اربط مزود AI';}
+    if(isReal){mode.className='tag tag-real';mode.textContent='✓ تحليل ذكاء اصطناعي حقيقي';}
+    else{mode.className='tag tag-demo';mode.textContent='وضع تجريبي — أضف مفتاح API';}
     renderResultsTable(leads);
     document.getElementById('searchResults').style.display='block';
-    document.getElementById('searchResults').scrollIntoView({behavior:'smooth',block:'start'});
-
-    if(autoImport){
-      const hot=leads.filter(l=>l.score>=75);
-      hot.forEach(c=>{if(!APP.leads.find(x=>x.name===c.name))APP.leads.push({...c});});
-      await DB.set('leads',APP.leads);
-      document.getElementById('leadsCount').textContent=APP.leads.length;
-      showToast(`✅ ${leads.length} نتيجة · تم استيراد ${hot.length} عميل تلقائياً (≥75%)`);
-    } else {
-      showToast(`✅ تم العثور على ${leads.length} عميل محتمل`);
-    }
+    showToast(`✅ تم العثور على ${leads.length} عميل محتمل`);
   },600);
 }
 
-function genDemo(sectors,city,n,minScore){
+function generateDemoLeads(sector, city, n, minScore) {
   const base=[
-    {name:'مجموعة بن لادن السعودية',s:'بناء ومقاولات',e:'procurement@sbg.com.sa',w:'sbg.com.sa'},
-    {name:'شركة CCECC للمقاولات',s:'مقاولات ضخمة',e:'info@ccecc-sa.com',w:'ccecc.com.cn'},
-    {name:'السيف مهندسون مقاولون',s:'بناء وهندسة',e:'projects@elseif.com',w:'elseif.com'},
-    {name:'الجهاز للمقاولات',s:'مقاولات',e:'supply@aljihaz.com.sa',w:'aljihaz.com'},
-    {name:'مجموعة نقوا للاستزراع المائي',s:'صناعة وغذاء',e:'logistics@naqua.com.sa',w:'naqua.com.sa'},
-    {name:'شركة فيل العربية الصناعية',s:'صناعة بيئية',e:'ops@feal.com.sa',w:'feal.com.sa'},
-    {name:'شركة أرامكو للخدمات',s:'نفط وغاز',e:'transport@aramco.com',w:'aramco.com'},
-    {name:'شركة سابك',s:'بتروكيماويات',e:'transport@sabic.com',w:'sabic.com'},
-    {name:'شركة المياه الوطنية',s:'حكومي',e:'procurement@nwc.com.sa',w:'nwc.com.sa'},
-    {name:'ميناء جدة الإسلامي',s:'موانئ',e:'ops@jip.gov.sa',w:'mawani.gov.sa'},
-    {name:'شركة المراعي',s:'غذاء وصناعة',e:'supply@almarai.com',w:'almarai.com'},
-    {name:'شركة بناء الحضارة',s:'مقاولات',e:'info@bina-hadara.com',w:'bina-hadara.com'},
+    {name:'مجموعة بن لادن السعودية',sec:'بناء ومقاولات',e:'procurement@sbg.com.sa'},
+    {name:'شركة CCECC للمقاولات',sec:'مقاولات ضخمة',e:'info@ccecc-sa.com'},
+    {name:'السيف مهندسون مقاولون',sec:'بناء وهندسة',e:'projects@elseif.com'},
+    {name:'الجهاز للمقاولات',sec:'مقاولات',e:'supply@aljihaz.com.sa'},
+    {name:'مجموعة نقوا للاستزراع المائي',sec:'صناعة وغذاء',e:'logistics@naqua.com.sa'},
+    {name:'شركة فيل العربية الصناعية',sec:'صناعة بيئية',e:'ops@feal.com.sa'},
+    {name:'شركة أرامكو للخدمات',sec:'نفط وغاز',e:'transport@aramco.com'},
+    {name:'شركة سابك',sec:'بتروكيماويات',e:'transport@sabic.com'},
+    {name:'شركة المياه الوطنية',sec:'حكومي',e:'procurement@nwc.com.sa'},
+    {name:'ميناء جدة الإسلامي',sec:'موانئ',e:'ops@jip.gov.sa'},
+    {name:'شركة المراعي',sec:'غذاء وصناعة',e:'supply@almarai.com'},
+    {name:'شركة بناء الحضارة',sec:'مقاولات',e:'info@bina-hadara.com'},
   ];
   const out=[];
-  for(let i=0;i<n;i++){const b=base[i%base.length];const sfx=i>=base.length?` (فرع ${city.split(' ')[0]})`:'';
-    out.push({name:b.name+sfx,sector:b.s,city:city.split(' ')[0],email:b.e,
-      phone:'+96650'+(1000000+Math.floor(Math.random()*8999999)),website:b.w,
+  for(let i=0;i<n;i++){
+    const b=base[i%base.length];
+    const sfx=i>=base.length?` (فرع ${city})`:'';
+    out.push({name:b.name+sfx,sector:b.sec,city:city.split(' ')[0],email:b.e,
+      phone:'+96650'+(1000000+Math.floor(Math.random()*8999999)),
       score:Math.max(minScore,Math.floor(Math.random()*(95-minScore))+minScore),
-      reason:'تقييم تجريبي — اربط مزود AI للتحليل الحقيقي',status:'pending',last:'—',real:false});}
+      reason:'تقييم تجريبي — أضف مفتاح API للتحليل الحقيقي',status:'pending',last:'—',real:false});
+  }
   return out.sort((a,b)=>b.score-a.score);
 }
 
-function renderResultsTable(data){
-  document.getElementById('resultsBody').innerHTML=data.map((l,i)=>{
+function renderResultsTable(data) {
+  document.getElementById('resultsBody').innerHTML = data.map((l,i)=>{
     const cls=l.score>=80?'score-high':l.score>=60?'score-mid':'score-low';
-    const web=l.website?`<a href="${l.website.startsWith('http')?l.website:'https://'+l.website}" target="_blank" style="color:var(--cyan);font-size:11px;direction:ltr">🔗 زيارة</a>`:'<span style="color:var(--text-dim);font-size:11px">—</span>';
     return `<tr>
       <td><div class="checkbox-custom" id="chk-${i}" onclick="toggleChk(${i})"></div></td>
       <td><div style="font-weight:600">${l.name}</div></td>
@@ -1202,7 +1007,6 @@ function renderResultsTable(data){
       <td style="font-size:12px;color:var(--text-dim)">${l.city||'—'}</td>
       <td style="font-size:12px;direction:ltr">${l.email}</td>
       <td style="font-size:12px;direction:ltr">${l.phone}</td>
-      <td>${web}</td>
       <td><div class="score-bar ${cls}"><div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div><span class="score-text">${l.score}%</span></div></td>
       <td><div class="action-btns">
         <button class="btn-sm btn-view" onclick="viewLead(${i})">عرض</button>
@@ -1211,29 +1015,37 @@ function renderResultsTable(data){
       </div></td></tr>`;
   }).join('');
 }
+
 let selSet=new Set();
 function toggleChk(i){const el=document.getElementById('chk-'+i);
   if(selSet.has(i)){selSet.delete(i);el.classList.remove('checked');el.textContent='';}
   else{selSet.add(i);el.classList.add('checked');el.textContent='✓';}}
 function selectAll(){APP.searchResults.forEach((_,i)=>{selSet.add(i);const e=document.getElementById('chk-'+i);if(e){e.classList.add('checked');e.textContent='✓';}});showToast('تم تحديد الكل');}
+
 async function sendSelected(){
   if(selSet.size===0){showToast('⚠️ اختر شركات أولاً');return;}
   const chosen=[...selSet].map(i=>APP.searchResults[i]);
-  for(const c of chosen){if(!APP.leads.find(x=>x.name===c.name))APP.leads.push({...c});}
-  await DB.set('leads',APP.leads);
+  for(const c of chosen){ if(!APP.leads.find(x=>x.name===c.name)) APP.leads.push({...c}); }
+  await DB.set('leads', APP.leads);
   document.getElementById('leadsCount').textContent=APP.leads.length;
-  APP.campaignTargets=chosen;openPage('campaigns');startCampaign('email');
+  APP.campaignTargets=chosen;
+  openPage('campaigns');
+  startCampaign('email');
   showToast(`🚀 ${chosen.length} عميل جاهز للحملة`);
 }
+
 function filterLeads(type,btn){
-  document.querySelectorAll('#page-search .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  document.querySelectorAll('#page-search .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
   let f=APP.searchResults;
-  if(type==='high')f=f.filter(l=>l.score>=80);else if(type==='mid')f=f.filter(l=>l.score>=60&&l.score<80);else if(type==='low')f=f.filter(l=>l.score<60);
+  if(type==='high')f=f.filter(l=>l.score>=80);
+  else if(type==='mid')f=f.filter(l=>l.score>=60&&l.score<80);
+  else if(type==='low')f=f.filter(l=>l.score<60);
   renderResultsTable(f);
 }
+
 function viewLead(i){
   const l=APP.searchResults[i];
-  const web=l.website?`<a href="${l.website.startsWith('http')?l.website:'https://'+l.website}" target="_blank" style="color:var(--cyan);direction:ltr">${l.website}</a>`:'غير متوفر';
   document.getElementById('modalTitle').innerHTML=`تفاصيل <span>${l.name}</span>`;
   document.getElementById('modalBody').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -1241,10 +1053,9 @@ function viewLead(i){
       <div class="form-group"><label>نسبة الاهتمام</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--gold);border-radius:8px;font-size:13px;color:var(--gold);font-weight:700">${l.score}%</div></div>
       <div class="form-group"><label>البريد</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:12px;direction:ltr">${l.email}</div></div>
       <div class="form-group"><label>الهاتف</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:12px;direction:ltr">${l.phone}</div></div>
-      <div class="form-group" style="grid-column:1/-1"><label>الموقع الإلكتروني</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:12px">${web}</div></div>
     </div>
     <div class="info-box info-cyan"><div class="ib-title">🤖 تحليل الذكاء الاصطناعي</div>
-      <div style="color:var(--text-dim)">${l.reason||'شركة ضمن قطاع مستهدف ذو احتياج مرتفع لخدمات النقل الثقيل والتخليص الجمركي.'}</div></div>
+      <div style="color:var(--text-dim)">${l.reason||'شركة ضمن قطاع مستهدف ذو احتياج مرتفع لخدمات النقل الثقيل والتخليص الجمركي. يُنصح بالتواصل مع التركيز على سرعة التسليم والتغطية الشاملة.'}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn-primary" onclick="composeForResult(${i});closeModal('leadModal')">✍️ كتابة رسالة</button>
       <button class="btn-sm btn-wa" style="padding:10px 18px" onclick="waResult(${i})">📱 واتساب</button>
@@ -1252,88 +1063,159 @@ function viewLead(i){
     </div>`;
   document.getElementById('leadModal').classList.add('open');
 }
-function composeForResult(i){goCompose(APP.searchResults[i]);}
+
+function composeForResult(i){const l=APP.searchResults[i];goCompose(l);}
 function waResult(i){doWA(APP.searchResults[i]);}
-function goCompose(l){openPage('compose');
-  document.getElementById('cCompany').value=l.name;document.getElementById('cSector').value=l.sector;
-  document.getElementById('recipientEmail').value=l.email;document.getElementById('recipientPhone').value=l.phone;}
+function goCompose(l){
+  openPage('compose');
+  document.getElementById('cCompany').value=l.name;
+  document.getElementById('cSector').value=l.sector;
+  document.getElementById('recipientEmail').value=l.email;
+  document.getElementById('recipientPhone').value=l.phone;
+}
 function doWA(l){
+  const num=(APP.config.waNumber||l.phone||'').replace(/\D/g,'');
   const txt=encodeURIComponent(`السلام عليكم،\n\nنحن ${APP.config.myCompany||'شركة محمد للنقليات (MTC)'}، متخصصون في النقل الثقيل والتخليص الجمركي والخدمات اللوجستية.\n\nنودّ التعرف على احتياجات ${l.name} وتقديم أفضل الحلول.\n\n${APP.config.myContact||'+966501815872'}`);
-  window.open(`https://wa.me/${(l.phone||'').replace(/\D/g,'')}?text=${txt}`,'_blank');
+  const target=(l.phone||'').replace(/\D/g,'')||num;
+  window.open(`https://wa.me/${target}?text=${txt}`,'_blank');
 }
 
-// ==================== LEADS ====================
+// ==================== LEADS LIST ====================
 function renderLeadsList(){
   const tb=document.getElementById('leadsListBody');
   if(APP.leads.length===0){document.getElementById('leadsEmpty').style.display='block';tb.innerHTML='';return;}
   document.getElementById('leadsEmpty').style.display='none';
   const sm={pending:'tag-pending',sent:'tag-sent',opened:'tag-opened',replied:'tag-replied',cold:'tag-cold'};
   const sl={pending:'لم يُرسل',sent:'أُرسل',opened:'فُتح',replied:'رد ✅',cold:'بارد'};
-  tb.innerHTML=APP.leads.map((l,i)=>{const cls=l.score>=80?'score-high':l.score>=60?'score-mid':'score-low';
-    return `<tr><td><div style="font-weight:600;font-size:13px">${l.name}</div></td>
+  tb.innerHTML=APP.leads.map((l,i)=>{
+    const cls=l.score>=80?'score-high':l.score>=60?'score-mid':'score-low';
+    return `<tr>
+      <td><div style="font-weight:600;font-size:13px">${l.name}</div></td>
       <td><span class="tag tag-pending" style="font-size:10px">${l.sector}</span></td>
       <td style="font-size:11px;direction:ltr;color:var(--text-dim)">${l.email}</td>
-      <td><div class="score-bar ${cls}" style="min-width:80px"><div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div><span class="score-text">${l.score}%</span></div></td>
+      <td><div class="score-bar ${cls}" style="min-width:85px"><div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div><span class="score-text">${l.score}%</span></div></td>
       <td><span class="tag ${sm[l.status]||'tag-pending'}">${sl[l.status]||'—'}</span></td>
       <td style="font-size:12px;color:var(--text-dim)">${l.last||'—'}</td>
       <td><div class="action-btns">
         <button class="btn-sm btn-send" onclick="composeForLead(${i})">✍️</button>
         <button class="btn-sm btn-wa" onclick="doWA(APP.leads[${i}])">📱</button>
         <button class="btn-sm btn-danger" onclick="delLead(${i})">🗑️</button>
-      </div></td></tr>`;}).join('');
+      </div></td></tr>`;
+  }).join('');
 }
-function filterLeadsList(t,b){document.querySelectorAll('#page-leads .filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+function filterLeadsList(type,btn){
+  document.querySelectorAll('#page-leads .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
 function composeForLead(i){goCompose(APP.leads[i]);}
 async function delLead(i){APP.leads.splice(i,1);await DB.set('leads',APP.leads);
   document.getElementById('leadsCount').textContent=APP.leads.length;renderLeadsList();showToast('🗑️ تم الحذف');}
 
 // ==================== COMPOSE ====================
 function populateClientSelect(){
-  document.getElementById('composeClient').innerHTML='<option value="">— اختر عميلاً —</option>'+
-    APP.leads.map((l,i)=>`<option value="${i}">${l.name}</option>`).join('')+'<option value="manual">✏️ إدخال يدوي</option>';
+  const s=document.getElementById('composeClient');
+  s.innerHTML='<option value="">— اختر عميلاً —</option>'+
+    APP.leads.map((l,i)=>`<option value="${i}">${l.name}</option>`).join('')+
+    '<option value="manual">✏️ إدخال يدوي</option>';
 }
-function fillClientData(){const v=document.getElementById('composeClient').value;
-  if(v===''||v==='manual')return;const l=APP.leads[parseInt(v)];
-  document.getElementById('cCompany').value=l.name;document.getElementById('cSector').value=l.sector;
-  document.getElementById('recipientEmail').value=l.email;document.getElementById('recipientPhone').value=l.phone;}
+function fillClientData(){
+  const v=document.getElementById('composeClient').value;
+  if(v===''||v==='manual')return;
+  const l=APP.leads[parseInt(v)];
+  document.getElementById('cCompany').value=l.name;
+  document.getElementById('cSector').value=l.sector;
+  document.getElementById('recipientEmail').value=l.email;
+  document.getElementById('recipientPhone').value=l.phone;
+}
+
 async function generateMessage(){
   const company=document.getElementById('cCompany').value.trim();
-  if(!company){showToast('⚠️ أدخل اسم الشركة');return;}
   const sector=document.getElementById('cSector').value.trim();
+  if(!company){showToast('⚠️ أدخل اسم الشركة');return;}
   const msgType=document.getElementById('msgType').value;
   const lang=document.getElementById('msgLang').value;
   const note=document.getElementById('cNote').value.trim();
+
   document.getElementById('composeLoader').classList.add('active');
   document.getElementById('msgPreviewBox').style.display='none';
   document.getElementById('composeEmpty').style.display='none';
   document.getElementById('genBtn').disabled=true;
-  const typeLabel={intro:'رسالة تعريفية — أول تواصل بارد',followup:'متابعة — العميل لم يرد',proposal:'عرض تعاون / طلب اجتماع لتقديم عرض سعر',reopen:'إعادة فتح بعد فترة صمت'}[msgType];
-  const langInstr=lang==='ar'?'العربية فقط':lang==='en'?'English only':'العربية ثم ترجمة إنجليزية';
-  const d={myCompany:APP.config.myCompany||'شركة محمد الحسني للنقليات (MTC)',
+
+  const typeLabel={intro:'رسالة تعريفية — أول تواصل بارد',followup:'رسالة متابعة — العميل لم يرد على الرسالة الأولى',proposal:'رسالة عرض تعاون / طلب اجتماع لتقديم عرض سعر',reopen:'رسالة إعادة فتح بعد فترة صمت'}[msgType];
+  const langInstr=lang==='ar'?'العربية فقط':lang==='en'?'English only':'العربية ثم ترجمة إنجليزية تحتها';
+
+  const promptData={
+    myCompany:APP.config.myCompany||'شركة محمد الحسني للنقليات (MTC)',
     myServices:APP.config.myServices||'نقل ثقيل، تخليص جمركي، خدمات لوجستية',
-    myAdvantages:APP.config.myAdvantages||'خبرة منذ 1433هـ، أسطول متنوع',
-    myContact:APP.config.myContact||'+966501815872',company,sector,note,typeLabel,langInstr};
-  const res=await callAI(MSG_PROMPT(d),1500);
-  const msg=(res.ok&&res.text)?res.text.trim():fallbackMsg(company,sector,msgType,d);
+    myAdvantages:APP.config.myAdvantages||'خبرة منذ 1433هـ، أسطول متنوع، تغطية شاملة',
+    myContact:APP.config.myContact||'+966501815872',
+    company,sector,note,typeLabel,langInstr
+  };
+
+  const res=await callClaude(MESSAGE_PROMPT(promptData),1500);
+  let msg='';
+  if(res.ok && res.text) msg=res.text.trim();
+  else msg=fallbackMsg(company,sector,msgType,promptData);
+
   document.getElementById('composeLoader').classList.remove('active');
   document.getElementById('genBtn').disabled=false;
   document.getElementById('msgPreviewBox').style.display='block';
   document.getElementById('msgPreview').textContent=msg;
-  if(!res.ok)showToast('ℹ️ رسالة تجريبية — '+(res.detail||'اربط مزود AI للتوليد الحقيقي'));
+  if(!res.ok) showToast('ℹ️ رسالة تجريبية — أضف مفتاح API للتوليد الحقيقي');
 }
+
 function fallbackMsg(company,sector,type,d){
-  if(type==='followup')return `الموضوع: متابعة بخصوص خدمات النقل اللوجستي - ${company}\n\nالسادة ${company} المحترمين،\n\nتحية طيبة،\n\nمتابعةً لرسالتنا السابقة من ${d.myCompany} حول حلول النقل الثقيل والتخليص الجمركي، نتأكد من وصولها ونرحب بأي استفسار.\n\nنظراً لنشاطكم في ${sector||'مجالكم'}، نثق أن خدماتنا تدعم عملياتكم بكفاءة.\n\nنسعد بمكالمة قصيرة (15 دقيقة) في الوقت المناسب لكم.\n\nمع التقدير،\nإدارة تطوير الأعمال\n${d.myContact}`;
-  return `الموضوع: حلول النقل الثقيل والتخليص الجمركي - ${company}\n\nالسادة ${company} المحترمين،\n\nالسلام عليكم ورحمة الله،\n\nنتواصل معكم من ${d.myCompany}، المتخصصة في حلول النقل اللوجستي منذ 1433هـ.\n\nنشاطكم في ${sector||'قطاعكم'} يتطلب حلول نقل موثوقة، ويسعدنا تقديم خدماتنا الأكثر صلة:\n• النقل الثقيل والتريلات بأسطول حديث يغطي المملكة\n• التخليص الجمركي السريع مع الامتثال الكامل\n\nنفخر بثقة شركاء كبار مثل بن لادن ونقوا والجهاز للمقاولات.\n\nنسعد بترتيب اجتماع قصير لاستعراض كيف ندعم عملياتكم.\n\nمع التقدير،\nإدارة تطوير الأعمال\n${d.myContact}`;
+  if(type==='followup') return `الموضوع: متابعة بخصوص خدمات النقل اللوجستي - ${company}
+
+السادة ${company} المحترمين،
+
+تحية طيبة،
+
+متابعةً لرسالتنا السابقة من ${d.myCompany} حول حلول النقل الثقيل والتخليص الجمركي، أردنا التأكد من وصولها والإجابة على أي استفسار قد يكون لديكم.
+
+نظراً لطبيعة نشاطكم في ${sector||'مجالكم'}، نثق أن خدماتنا في النقل الثقيل والتخليص الجمركي يمكن أن تدعم عملياتكم بكفاءة.
+
+نسعد بترتيب مكالمة قصيرة (15 دقيقة) في الوقت المناسب لكم.
+
+مع التقدير،
+إدارة تطوير الأعمال
+${d.myContact}`;
+  return `الموضوع: حلول النقل الثقيل والتخليص الجمركي - ${company}
+
+السادة ${company} المحترمين،
+
+السلام عليكم ورحمة الله،
+
+نتواصل معكم من ${d.myCompany}، المتخصصة في حلول النقل اللوجستي منذ 1433هـ.
+
+لاحظنا أن نشاطكم في ${sector||'قطاعكم'} يتطلب حلول نقل موثوقة، ويسعدنا تقديم خدماتنا الأكثر صلة باحتياجاتكم:
+• النقل الثقيل والتريلات بأسطول حديث يغطي جميع مناطق المملكة
+• خدمات التخليص الجمركي السريع مع ضمان الامتثال الكامل
+
+نفخر بثقة شركاء كبار مثل مجموعة بن لادن ونقوا والجهاز للمقاولات.
+
+نسعد بترتيب اجتماع قصير لاستعراض كيف يمكننا دعم عملياتكم.
+
+مع التقدير،
+إدارة تطوير الأعمال
+${d.myContact}`;
 }
+
 async function sendEmailSingle(){
   const to=document.getElementById('recipientEmail').value.trim();
   if(!to){showToast('⚠️ أدخل البريد المستلم');return;}
-  if(!APP.config.backendUrl){showToast('⚠️ اربط الخادم الخلفي للإرسال الفعلي');return;}
-  showToast('📤 جاري الإرسال...');
-  try{const r=await fetch(APP.config.backendUrl.replace(/\/$/,'')+'/api/send',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({to,body:document.getElementById('msgPreview').textContent,from:APP.config.senderEmail,fromName:APP.config.senderName})});
-    showToast(r.ok?'✅ تم الإرسال':'⚠️ فشل — تحقق من الخادم');}catch(e){showToast('⚠️ تعذّر الاتصال بالخادم');}
+  const backend=APP.config.backendUrl;
+  if(!backend){showToast('⚠️ اربط الخادم الخلفي في الإعدادات للإرسال الفعلي');return;}
+  const msg=document.getElementById('msgPreview').textContent;
+  showToast('📤 جاري الإرسال عبر الخادم...');
+  try{
+    const r=await fetch(backend.replace(/\/$/,'')+'/api/send',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({to,body:msg,from:APP.config.senderEmail,fromName:APP.config.senderName})
+    });
+    if(r.ok)showToast('✅ تم الإرسال بنجاح');
+    else showToast('⚠️ فشل الإرسال — تحقق من الخادم');
+  }catch(e){showToast('⚠️ تعذّر الاتصال بالخادم');}
 }
 function sendWhatsApp(){
   const phone=document.getElementById('recipientPhone').value.trim();
@@ -1342,74 +1224,111 @@ function sendWhatsApp(){
   window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 function copyMsg(){navigator.clipboard.writeText(document.getElementById('msgPreview').textContent);showToast('📋 تم النسخ');}
-function editMsg(){const b=document.getElementById('msgPreview');b.contentEditable=b.contentEditable==='true'?'false':'true';
-  if(b.contentEditable==='true'){b.focus();showToast('✏️ التعديل مفعّل');}else showToast('✅ تم الحفظ');}
-function addAttachment(n,ic){const c=document.createElement('div');c.className='att-chip';
-  c.innerHTML=`${ic} ${n} <span onclick="this.parentElement.remove()" style="margin-right:6px;opacity:.6;cursor:pointer">✕</span>`;
+function editMsg(){const b=document.getElementById('msgPreview');
+  b.contentEditable=b.contentEditable==='true'?'false':'true';
+  if(b.contentEditable==='true'){b.focus();showToast('✏️ وضع التعديل مفعّل');}else showToast('✅ تم الحفظ');}
+function addAttachment(name,icon){
+  const c=document.createElement('div');c.className='att-chip';
+  c.innerHTML=`${icon} ${name} <span onclick="this.parentElement.remove()" style="margin-right:6px;opacity:.6;cursor:pointer">✕</span>`;
   document.getElementById('attachments').appendChild(c);showToast('📎 تمت الإضافة');}
 
 // ==================== CAMPAIGNS ====================
-function startCampaign(mode){APP.campaignMode=mode;
+function startCampaign(mode){
+  APP.campaignMode=mode;
   document.getElementById('campaignPanel').style.display='block';
   document.getElementById('execBtn').textContent=mode==='wa'?'📱 تنفيذ حملة واتساب':'🚀 تنفيذ حملة البريد';
   document.getElementById('sendProgressArea').innerHTML='';
-  document.getElementById('campaignPanel').scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
 async function executeCampaign(){
   const targets=APP.campaignTargets&&APP.campaignTargets.length?APP.campaignTargets:APP.leads;
   if(targets.length===0){showToast('⚠️ لا يوجد عملاء — ابحث أولاً');return;}
   const area=document.getElementById('sendProgressArea');area.innerHTML='';
   const btn=document.getElementById('execBtn');btn.disabled=true;
   const [mn,mx]=document.getElementById('delayBetween').value.split('-').map(Number);
-  const backend=APP.config.backendUrl,mode=APP.campaignMode;let done=0;
+  const backend=APP.config.backendUrl;
+  const mode=APP.campaignMode;
+  let done=0;
+
   for(let idx=0;idx<targets.length;idx++){
-    const l=targets[idx];btn.textContent=`⏳ ${idx+1}/${targets.length}`;
+    const l=targets[idx];
+    btn.textContent=`⏳ ${idx+1}/${targets.length}`;
     const el=document.createElement('div');el.className='send-progress';
-    el.innerHTML=`<div class="sp-icon pulse">${mode==='wa'?'📱':'📤'}</div><div class="sp-info"><div class="sp-title">${l.name}</div><div class="sp-sub">${mode==='wa'?l.phone:l.email}</div></div><span class="tag tag-pending">يُولّد...</span>`;
+    el.innerHTML=`<div class="sp-icon pulse">${mode==='wa'?'📱':'📤'}</div><div class="sp-info"><div class="sp-title">${l.name}</div><div class="sp-sub">${mode==='wa'?l.phone:l.email}</div></div><span class="tag tag-pending">يُولّد الرسالة...</span>`;
     area.appendChild(el);area.scrollTop=area.scrollHeight;
-    const d={myCompany:APP.config.myCompany||'MTC',myServices:APP.config.myServices||'نقل ثقيل وتخليص جمركي',
+
+    // Generate personalized message via Claude
+    const pd={myCompany:APP.config.myCompany||'MTC',myServices:APP.config.myServices||'نقل ثقيل وتخليص جمركي',
       myAdvantages:APP.config.myAdvantages||'خبرة وأسطول متنوع',myContact:APP.config.myContact||'+966501815872',
       company:l.name,sector:l.sector,note:'',typeLabel:'رسالة تعريفية — أول تواصل',langInstr:'العربية'};
-    const r=await callAI(MSG_PROMPT(d),1200);
-    const pm=r.ok&&r.text?r.text.trim():fallbackMsg(l.name,l.sector,'intro',d);
+    const r=await callClaude(MESSAGE_PROMPT(pd),1200);
+    const personalizedMsg=r.ok&&r.text?r.text.trim():fallbackMsg(l.name,l.sector,'intro',pd);
+
     el.querySelector('.tag').textContent=mode==='wa'?'يفتح واتساب...':'يُرسل...';
-    let ok=true;
+    let success=true;
     if(mode==='email'){
-      if(backend){try{const res=await fetch(backend.replace(/\/$/,'')+'/api/send',{method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({to:l.email,body:pm,from:APP.config.senderEmail,fromName:APP.config.senderName,leadName:l.name})});ok=res.ok;}catch(e){ok=false;}}
-      else await sleep(700);
-    } else {window.open(`https://wa.me/${(l.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(pm.replace(/^الموضوع:.*\n+/i,''))}`,'_blank');await sleep(500);}
-    if(ok){el.querySelector('.tag').className='tag tag-sent';el.querySelector('.tag').textContent=mode==='wa'?'✅ فُتح':'✅ أُرسل';
-      el.querySelector('.sp-icon').classList.remove('pulse');el.querySelector('.sp-icon').textContent=mode==='wa'?'📱':'✉️';
-      const lr=APP.leads.find(x=>x.name===l.name);if(lr){lr.status='sent';lr.last='اليوم';}done++;}
-    else{el.querySelector('.tag').className='tag tag-cold';el.querySelector('.tag').textContent='⚠️ فشل';}
-    if(idx<targets.length-1){const w=Math.floor(Math.random()*(mx-mn)+mn);
-      el.querySelector('.sp-sub').textContent+=`  ·  انتظار ${w}ث`;await sleep(Math.min(w*100,3000));}
+      if(backend){
+        try{
+          const res=await fetch(backend.replace(/\/$/,'')+'/api/send',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({to:l.email,body:personalizedMsg,from:APP.config.senderEmail,fromName:APP.config.senderName,leadName:l.name})});
+          success=res.ok;
+        }catch(e){success=false;}
+      } else { await sleep(700); /* demo */ }
+    } else {
+      const msgClean=personalizedMsg.replace(/^الموضوع:.*\n+/i,'');
+      window.open(`https://wa.me/${(l.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msgClean)}`,'_blank');
+      await sleep(500);
+    }
+
+    if(success){
+      el.querySelector('.tag').className='tag tag-sent';
+      el.querySelector('.tag').textContent=mode==='wa'?'✅ فُتح واتساب':'✅ أُرسل';
+      el.querySelector('.sp-icon').classList.remove('pulse');
+      el.querySelector('.sp-icon').textContent=mode==='wa'?'📱':'✉️';
+      const lref=APP.leads.find(x=>x.name===l.name);
+      if(lref){lref.status='sent';lref.last='اليوم';}
+      done++;
+    } else {
+      el.querySelector('.tag').className='tag tag-cold';
+      el.querySelector('.tag').textContent='⚠️ فشل';
+    }
+    if(idx<targets.length-1){
+      const w=Math.floor(Math.random()*(mx-mn)+mn);
+      el.querySelector('.sp-sub').textContent+=`  ·  انتظار ${w}ث للحماية`;
+      await sleep(Math.min(w*100,3000)); // scaled for demo
+    }
   }
   await DB.set('leads',APP.leads);
-  APP.campaigns.push({date:new Date().toLocaleDateString('ar-SA'),mode,total:targets.length,sent:done});
+  APP.campaigns.push({date:new Date().toLocaleDateString('ar-SA'),mode,total:targets.length,sent:done,opened:0,replied:0});
   await DB.set('campaigns',APP.campaigns);
   btn.disabled=false;btn.textContent='✅ اكتملت الحملة';
   renderLeadsList();renderPastCampaigns();
-  showToast(`✅ اكتملت — ${done}/${targets.length}`);
+  showToast(`✅ اكتملت الحملة — ${done}/${targets.length} ${mode==='wa'?'فُتح واتساب':'أُرسل'}`);
 }
 function renderPastCampaigns(){
-  const el=document.getElementById('pastCampaigns');if(APP.campaigns.length===0)return;
-  el.innerHTML=APP.campaigns.map(c=>{const rate=c.total?Math.round(c.sent/c.total*100):0;
+  const el=document.getElementById('pastCampaigns');
+  if(APP.campaigns.length===0)return;
+  el.innerHTML=APP.campaigns.map(c=>{
+    const rate=c.total?Math.round(c.sent/c.total*100):0;
     return `<div class="send-progress"><div class="sp-icon">${c.mode==='wa'?'📱':'📧'}</div>
       <div class="sp-info"><div class="sp-title">حملة ${c.mode==='wa'?'واتساب':'بريد'} — ${c.date}</div>
-      <div class="sp-sub" style="direction:rtl;text-align:right">${c.sent} من ${c.total}</div>
+      <div class="sp-sub" style="direction:rtl;text-align:right">${c.sent} مرسلة من ${c.total}</div>
       <div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:${rate}%"></div></div></div>
-      <span class="tag tag-sent">${rate}%</span></div>`;}).join('');
+      <span class="tag tag-sent">${rate}%</span></div>`;
+  }).join('');
 }
 
 // ==================== INBOX ====================
 function renderInbox(){
-  if(APP.inbox.length===0)APP.inbox=[
-    {from:'مجموعة بن لادن السعودية',email:'procurement@sbg.com.sa',subject:'رد: حلول النقل الثقيل',preview:'شكراً، يرجى إرسال عرض سعر مفصّل...',time:'منذ ساعتين',unread:true,body:'السادة شركة محمد للنقليات،\n\nشكراً على تواصلكم. نودّ عرض سعر مفصّل لخدمات النقل الثقيل والتخليص الجمركي.\n\nإدارة المشتريات'},
-    {from:'شركة أرامكو للخدمات',email:'transport@aramco.com',subject:'استفسار عن نقل المعدات',preview:'نود الاستفسار عن التعاقد...',time:'أمس',unread:true,body:'نود الاستفسار عن نقل الأنابيب والمعدات الثقيلة في المنطقة الشرقية. هل بإمكانكم تقديم عرض؟'},
-    {from:'مجموعة نقوا',email:'logistics@naqua.com.sa',subject:'Re: شراكة لوجستية',preview:'نحن مهتمون بالتعاون...',time:'منذ 3 أيام',unread:false,body:'نحن مهتمون بالتعاون. هل يمكن ترتيب اجتماع هذا الأسبوع؟'}];
-  document.getElementById('inboxList').innerHTML=APP.inbox.map((m,i)=>`
+  if(APP.inbox.length===0){
+    APP.inbox=[
+      {id:1,from:'مجموعة بن لادن السعودية',email:'procurement@sbg.com.sa',subject:'رد: حلول النقل الثقيل والتخليص الجمركي',preview:'شكراً للتواصل، يرجى إرسال عرض سعر مفصّل...',time:'منذ ساعتين',unread:true,body:'السادة شركة محمد للنقليات المحترمين،\n\nشكراً على تواصلكم. اطلعنا على خدماتكم ونودّ عرض سعر مفصّل لخدمات النقل الثقيل والتخليص الجمركي مع الشروط.\n\nإدارة المشتريات'},
+      {id:2,from:'شركة أرامكو للخدمات',email:'transport@aramco.com',subject:'استفسار عن نقل المعدات الثقيلة',preview:'نود الاستفسار عن إمكانية التعاقد...',time:'أمس',unread:true,body:'نود الاستفسار عن نقل الأنابيب والمعدات الثقيلة في المنطقة الشرقية. هل بإمكانكم تقديم عرض؟'},
+      {id:3,from:'مجموعة نقوا',email:'logistics@naqua.com.sa',subject:'Re: شراكة لوجستية',preview:'نحن مهتمون بالتعاون...',time:'منذ 3 أيام',unread:false,body:'نحن مهتمون بالتعاون. هل يمكن ترتيب اجتماع هذا الأسبوع؟'},
+    ];
+  }
+  const list=document.getElementById('inboxList');
+  list.innerHTML=APP.inbox.map((m,i)=>`
     <div class="inbox-item ${m.unread?'unread':''}" onclick="openInboxMsg(${i})">
       <div class="inbox-avatar">${m.unread?'📬':'📭'}</div>
       <div class="inbox-meta"><div class="inbox-sender">${m.from}</div>
@@ -1418,300 +1337,343 @@ function renderInbox(){
       <div class="inbox-time">${m.time}</div></div>`).join('');
   document.getElementById('inboxCount').textContent=APP.inbox.filter(m=>m.unread).length||'';
 }
-function openInboxMsg(i){APP.inbox[i].unread=false;renderInbox();const m=APP.inbox[i];
+function openInboxMsg(i){
+  APP.inbox[i].unread=false;renderInbox();
+  const m=APP.inbox[i];
   document.getElementById('inboxDetail').innerHTML=`
     <div style="margin-bottom:16px"><div style="font-size:16px;font-weight:700;margin-bottom:4px">${m.subject}</div>
       <div style="font-size:12px;color:var(--text-dim)">من: ${m.from} · ${m.email} · ${m.time}</div></div>
     <div style="background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.9;white-space:pre-wrap;margin-bottom:16px">${m.body}</div>
     <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--gold)">✍️ رد سريع</div>
     <textarea class="form-textarea" id="replyBox" placeholder="اكتب ردك..." style="margin-bottom:10px"></textarea>
-
-```
-<div style="display:flex;gap:10px;flex-wrap:wrap">
-  <button class="btn-primary" onclick="showToast('✅ تم الإرسال (يتطلب خادم)')">📧 إرسال الرد</button>
-  <button class="btn-sm btn-view" style="padding:9px 16px" onclick="aiReply(${i})">🤖 رد ذكي</button>
-</div>`;}
-```
-
-async function aiReply(i){const m=APP.inbox[i];showToast(‘🤖 يكتب الرد…’);
-const p=`أنت ممثل خدمة عملاء محترف في ${APP.config.myCompany||'شركة محمد للنقليات'}. وصلتنا رسالة من "${m.from}":\n\n"${m.body}"\n\nاكتب رداً مهنياً موجزاً ودوداً (60-100 كلمة) يجيب على استفسارهم ويدفع للخطوة التالية. وقّع باسم إدارة تطوير الأعمال مع: ${APP.config.myContact||'+966501815872'}. لا شرح خارج نص الرد.`;
-const r=await callAI(p,800);
-const reply=r.ok&&r.text?r.text.trim():`السادة ${m.from} المحترمين،\n\nشكراً على تواصلكم. يسعدنا إعداد عرض سعر مفصّل يصلكم خلال 24 ساعة، ونرحب بترتيب اجتماع.\n\nمع التقدير،\nإدارة تطوير الأعمال\n${APP.config.myContact||'+966501815872'}`;
-if(document.getElementById(‘replyBox’))document.getElementById(‘replyBox’).value=reply;showToast(‘✅ تم توليد الرد’);}
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="showToast('✅ تم إرسال الرد (يتطلب خادم)')">📧 إرسال الرد</button>
+      <button class="btn-sm btn-view" style="padding:9px 16px" onclick="aiReply(${i})">🤖 رد ذكي</button>
+    </div>`;
+}
+async function aiReply(i){
+  const m=APP.inbox[i];
+  showToast('🤖 Claude يكتب الرد...');
+  const p=`أنت ممثل خدمة عملاء محترف في ${APP.config.myCompany||'شركة محمد للنقليات'}. وصلتنا هذه الرسالة من "${m.from}":\n\n"${m.body}"\n\nاكتب رداً مهنياً موجزاً ودوداً (60-100 كلمة) يجيب على استفسارهم ويدفع للخطوة التالية (اجتماع/عرض سعر). وقّع باسم إدارة تطوير الأعمال مع: ${APP.config.myContact||'+966501815872'}. لا تضف شرحاً خارج نص الرد.`;
+  const r=await callClaude(p,800);
+  const reply=r.ok&&r.text?r.text.trim():`السادة ${m.from} المحترمين،\n\nشكراً جزيلاً على تواصلكم. يسعدنا إعداد عرض سعر مفصّل يصلكم خلال 24 ساعة، ونرحب بترتيب اجتماع لمناقشة التفاصيل.\n\nمع التقدير،\nإدارة تطوير الأعمال\n${APP.config.myContact||'+966501815872'}`;
+  if(document.getElementById('replyBox'))document.getElementById('replyBox').value=reply;
+  showToast('✅ تم توليد الرد');
+}
 
 // ==================== CHARTS ====================
 function renderDashboardCharts(){
-const c1=document.getElementById(‘chartMain’);if(c1._c)c1._c.destroy();
-c1._c=new Chart(c1,{type:‘line’,data:{labels:[‘أ1’,‘أ2’,‘أ3’,‘أ4’],
-datasets:[{label:‘مرسلة’,data:[0,0,0,APP.leads.filter(l=>l.status!==‘pending’).length],borderColor:’#caa84d’,tension:.4},
-{label:‘مفتوحة’,data:[0,0,0,APP.leads.filter(l=>l.status===‘opened’||l.status===‘replied’).length],borderColor:’#00cfff’,tension:.4},
-{label:‘ردود’,data:[0,0,0,APP.leads.filter(l=>l.status===‘replied’).length],borderColor:’#00e082’,tension:.4}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:’#8295bb’,font:{family:‘Cairo’,size:11}}}},
-scales:{x:{ticks:{color:’#8295bb’},grid:{color:‘rgba(202,168,77,.08)’}},y:{ticks:{color:’#8295bb’},grid:{color:‘rgba(202,168,77,.08)’}}}}});
-const sec={};APP.leads.forEach(l=>{sec[l.sector]=(sec[l.sector]||0)+1;});
-const c2=document.getElementById(‘chartSectors’);if(c2._c)c2._c.destroy();
-c2._c=new Chart(c2,{type:‘doughnut’,data:{labels:Object.keys(sec).length?Object.keys(sec):[‘لا بيانات’],
-datasets:[{data:Object.keys(sec).length?Object.values(sec):[1],backgroundColor:[’#caa84d’,’#00cfff’,’#00e082’,’#ff9a3c’,’#b07cff’,’#ff5b6e’]}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:‘bottom’,labels:{color:’#8295bb’,font:{family:‘Cairo’,size:10},boxWidth:12}}}}});
+  const c1=document.getElementById('chartMain');
+  if(c1._c)c1._c.destroy();
+  c1._c=new Chart(c1,{type:'line',data:{labels:['أ1','أ2','أ3','أ4'],
+    datasets:[{label:'مرسلة',data:[0,0,0,APP.leads.filter(l=>l.status!=='pending').length],borderColor:'#caa84d',tension:.4},
+    {label:'مفتوحة',data:[0,0,0,APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length],borderColor:'#00cfff',tension:.4},
+    {label:'ردود',data:[0,0,0,APP.leads.filter(l=>l.status==='replied').length],borderColor:'#00e082',tension:.4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8295bb',font:{family:'Cairo',size:11}}}},
+    scales:{x:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}},y:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}}}}});
+  const sectors={};APP.leads.forEach(l=>{sectors[l.sector]=(sectors[l.sector]||0)+1;});
+  const c2=document.getElementById('chartSectors');
+  if(c2._c)c2._c.destroy();
+  c2._c=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(sectors).length?Object.keys(sectors):['لا بيانات'],
+    datasets:[{data:Object.keys(sectors).length?Object.values(sectors):[1],backgroundColor:['#caa84d','#00cfff','#00e082','#ff9a3c','#e040fb','#ff5b6e']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8295bb',font:{family:'Cairo',size:10},boxWidth:12}}}}});
 }
-function renderAnalytics(){refreshStats();
-const sent=APP.leads.filter(l=>l.status!==‘pending’).length;
-const op=APP.leads.filter(l=>l.status===‘opened’||l.status===‘replied’).length;
-const rp=APP.leads.filter(l=>l.status===‘replied’).length;
-document.getElementById(‘an1’).textContent=sent;
-document.getElementById(‘an2’).textContent=sent?Math.round(op/sent*100)+’%’:‘0%’;
-document.getElementById(‘an3’).textContent=sent?Math.round(rp/sent*100)+’%’:‘0%’;
-document.getElementById(‘an4’).textContent=APP.leads.filter(l=>l.status===‘sent’).length;
-setTimeout(()=>{
-const co=document.getElementById(‘chartOpen’);
-if(co&&!co._d){co._d=true;new Chart(co,{type:‘bar’,data:{labels:[‘8’,‘9’,‘10’,‘11’,‘12’,‘1’,‘2’,‘3’,‘4’,‘5’],
-datasets:[{label:‘فتح’,data:[2,8,15,12,6,10,14,9,5,3],backgroundColor:‘rgba(202,168,77,.6)’,borderColor:’#caa84d’,borderWidth:1}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:’#8295bb’},grid:{color:‘rgba(202,168,77,.08)’}},y:{ticks:{color:’#8295bb’},grid:{color:‘rgba(202,168,77,.08)’}}}}});}
-const cp=document.getElementById(‘chartPerf’);
-if(cp&&!cp._d){cp._d=true;new Chart(cp,{type:‘radar’,data:{labels:[‘بناء’,‘نفط’,‘موانئ’,‘صناعة’,‘حكومي’],
-datasets:[{label:‘فتح’,data:[72,85,60,55,40],backgroundColor:‘rgba(0,207,255,.15)’,borderColor:’#00cfff’},
-{label:‘رد’,data:[20,35,15,10,5],backgroundColor:‘rgba(0,224,130,.15)’,borderColor:’#00e082’}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:’#8295bb’,font:{family:‘Cairo’,size:10}}}},
-scales:{r:{ticks:{color:’#8295bb’},grid:{color:‘rgba(202,168,77,.1)’},pointLabels:{color:’#8295bb’,font:{family:‘Cairo’}}}}}});}
-renderTrackingMap();},100);
+function renderAnalytics(){
+  refreshStats();
+  document.getElementById('an1').textContent=APP.leads.filter(l=>l.status!=='pending').length;
+  const sent=APP.leads.filter(l=>l.status!=='pending').length;
+  const opened=APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length;
+  const replied=APP.leads.filter(l=>l.status==='replied').length;
+  document.getElementById('an2').textContent=sent?Math.round(opened/sent*100)+'%':'0%';
+  document.getElementById('an3').textContent=sent?Math.round(replied/sent*100)+'%':'0%';
+  document.getElementById('an4').textContent=APP.leads.filter(l=>l.status==='sent').length;
+  setTimeout(()=>{
+    const co=document.getElementById('chartOpen');
+    if(co&&!co._d){co._d=true;new Chart(co,{type:'bar',data:{labels:['8','9','10','11','12','1','2','3','4','5'],
+      datasets:[{label:'فتح',data:[2,8,15,12,6,10,14,9,5,3],backgroundColor:'rgba(202,168,77,.6)',borderColor:'#caa84d',borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}},y:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}}}}});}
+    const cp=document.getElementById('chartPerf');
+    if(cp&&!cp._d){cp._d=true;new Chart(cp,{type:'radar',data:{labels:['بناء','نفط','موانئ','صناعة','حكومي'],
+      datasets:[{label:'فتح',data:[72,85,60,55,40],backgroundColor:'rgba(0,207,255,.15)',borderColor:'#00cfff'},
+      {label:'رد',data:[20,35,15,10,5],backgroundColor:'rgba(0,224,130,.15)',borderColor:'#00e082'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8295bb',font:{family:'Cairo',size:10}}}},
+      scales:{r:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.1)'},pointLabels:{color:'#8295bb',font:{family:'Cairo'}}}}}});}
+    renderTrackingMap();
+  },100);
 }
 function renderTrackingMap(){
-const el=document.getElementById(‘trackingMap’);if(!el)return;
-const src=APP.leads.length?APP.leads.slice(0,15):[];
-if(src.length===0){el.innerHTML=’<div class="empty-state" style="padding:30px"><div class="icon">🗺️</div><p>لا توجد بيانات تتبع بعد</p></div>’;return;}
-el.innerHTML=’<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">’+src.map(l=>{
-const col=l.status===‘replied’?‘var(–green)’:l.status===‘opened’?‘var(–gold)’:l.status===‘sent’?‘var(–cyan)’:‘var(–text-dim)’;
-const ic=l.status===‘replied’?‘💬’:l.status===‘opened’?‘👁️’:l.status===‘sent’?‘📧’:‘⏳’;
-const lb=l.status===‘replied’?‘رد’:l.status===‘opened’?‘فتح’:l.status===‘sent’?‘أُرسل’:‘منتظر’;
-return `<div style="background:rgba(19,40,77,.7);border:1px solid ${col}40;border-radius:10px;padding:10px;text-align:center"> <div style="font-size:18px;margin-bottom:4px">${ic}</div> <div style="font-size:10px;font-weight:700;color:${col}">${l.name.split(' ').slice(0,2).join(' ')}</div> <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${lb}</div></div>`;}).join(’’)+’</div>’;
+  const el=document.getElementById('trackingMap');if(!el)return;
+  const src=APP.leads.length?APP.leads.slice(0,15):[];
+  if(src.length===0){el.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">🗺️</div><p>لا توجد بيانات تتبع بعد</p></div>';return;}
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+src.map(l=>{
+    const col=l.status==='replied'?'var(--green)':l.status==='opened'?'var(--gold)':l.status==='sent'?'var(--cyan)':'var(--text-dim)';
+    const ic=l.status==='replied'?'💬':l.status==='opened'?'👁️':l.status==='sent'?'📧':'⏳';
+    const lb=l.status==='replied'?'رد':l.status==='opened'?'فتح':l.status==='sent'?'أُرسل':'منتظر';
+    return `<div style="background:rgba(19,40,77,.7);border:1px solid ${col}40;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;margin-bottom:4px">${ic}</div>
+      <div style="font-size:10px;font-weight:700;color:${col}">${l.name.split(' ').slice(0,2).join(' ')}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${lb}</div></div>`;
+  }).join('')+'</div>';
 }
 function renderDashSchedule(){
-document.getElementById(‘dashSchedule’).innerHTML=` <div class="schedule-item"><div class="schedule-time">أسبوعياً</div> <div class="schedule-info"><div class="schedule-title">إعادة إرسال لمن لم يفتح</div><div class="schedule-sub">يوم ووقت مختلف تلقائياً</div></div><span class="tag tag-pending">نشط</span></div> <div class="schedule-item" style="border:none"><div class="schedule-time">يومياً</div> <div class="schedule-info"><div class="schedule-title">فحص الردود الواردة</div><div class="schedule-sub">يتطلب الخادم الخلفي</div></div><span class="tag tag-sent">تلقائي</span></div>`;
+  document.getElementById('dashSchedule').innerHTML=`
+    <div class="schedule-item"><div class="schedule-time">أسبوعياً</div>
+      <div class="schedule-info"><div class="schedule-title">إعادة إرسال لمن لم يفتح</div>
+      <div class="schedule-sub">يوم ووقت مختلف تلقائياً</div></div><span class="tag tag-pending">نشط</span></div>
+    <div class="schedule-item" style="border:none"><div class="schedule-time">يومياً</div>
+      <div class="schedule-info"><div class="schedule-title">فحص الردود الواردة</div>
+      <div class="schedule-sub">يتطلب الخادم الخلفي</div></div><span class="tag tag-sent">تلقائي</span></div>`;
 }
 function refreshStats(){
-document.getElementById(‘st1’).textContent=APP.leads.length;
-document.getElementById(‘st2’).textContent=APP.leads.filter(l=>l.status!==‘pending’).length;
-document.getElementById(‘st3’).textContent=APP.leads.filter(l=>l.status===‘opened’||l.status===‘replied’).length;
-document.getElementById(‘st4’).textContent=APP.inbox.filter(m=>m.unread).length;
-document.getElementById(‘leadsCount’).textContent=APP.leads.length;
+  document.getElementById('st1').textContent=APP.leads.length;
+  document.getElementById('st2').textContent=APP.leads.filter(l=>l.status!=='pending').length;
+  document.getElementById('st3').textContent=APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length;
+  document.getElementById('st4').textContent=APP.inbox.filter(m=>m.unread).length;
+  document.getElementById('leadsCount').textContent=APP.leads.length;
 }
 
-// ==================== SETTINGS / PROVIDERS ====================
-function renderProviders(){
-document.getElementById(‘providerGrid’).innerHTML=Object.entries(PROVIDERS).map(([k,p])=>
-`<div class="provider-card ${APP.config.aiProvider===k?'selected':''}" onclick="pickProvider('${k}')"> <div class="provider-logo" style="color:${p.color}">${p.logo}</div> <div class="provider-info"><div class="provider-name">${p.name}</div><div class="provider-desc">${p.desc}</div></div></div>`).join(’’);
+// ==================== SETTINGS ====================
+async function saveAnthropicKey(){
+  const k=document.getElementById('anthropicKey').value.trim();
+  const m=document.getElementById('anthropicModel').value;
+  if(!k.startsWith('sk-ant')){document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--red)">⚠️ المفتاح يجب أن يبدأ بـ sk-ant</span>';return;}
+  APP.config.anthropicKey=k;APP.config.anthropicModel=m;
+  await DB.set('config',APP.config);
+  document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر الاتصال...</span>';
+  const r=await callClaude('قل "متصل" فقط',20);
+  if(r.ok){document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--green)">✅ متصل ويعمل بنجاح</span>';updateApiStatus(true);}
+  else{document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--orange)">⚠️ حُفظ المفتاح لكن تعذّر الاختبار: '+(r.error==='api_error'?'مفتاح غير صالح':'تحقق من الاتصال')+'</span>';updateApiStatus(false);}
 }
-function pickProvider(k){
-APP.config.aiProvider=k;
-const p=PROVIDERS[k];
-document.getElementById(‘aiModel’).value=p.model||’’;
-document.getElementById(‘aiEndpoint’).value=p.endpoint||’’;
-document.getElementById(‘customEndpointGroup’).style.display=(k===‘custom’)?‘block’:‘none’;
-document.getElementById(‘modelHint’).textContent=k===‘custom’?‘أدخل اسم الموديل وعنوان الخادم’:‘الموديل الافتراضي — يمكنك تغييره’;
-renderProviders();
-}
-async function saveAndTestAI(){
-const k=document.getElementById(‘aiKey’).value.trim();
-if(!APP.config.aiProvider){document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--red)">⚠️ اختر مزوداً أولاً</span>’;return;}
-if(!k){document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--red)">⚠️ أدخل مفتاح API</span>’;return;}
-APP.config.aiKey=k;
-APP.config.aiModel=document.getElementById(‘aiModel’).value.trim()||PROVIDERS[APP.config.aiProvider].model;
-APP.config.aiEndpoint=document.getElementById(‘aiEndpoint’).value.trim()||PROVIDERS[APP.config.aiProvider].endpoint;
-await DB.set(‘config’,APP.config);
-document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--cyan)">⏳ يختبر الاتصال بالمُحوّل الذكي…</span>’;
-const r=await callAI(‘قل كلمة “متصل” فقط’,20);
-if(r.ok){document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--green)">✅ متصل ويعمل بنجاح عبر ‘+PROVIDERS[APP.config.aiProvider].name+’</span>’;updateApiStatus(true);}
-else{const m={auth:‘مفتاح غير صالح’,rate:‘تجاوز حد الاستخدام’,network:‘تعذّر الاتصال (CORS؟ استخدم الخادم)’,timeout:‘انتهت المهلة’,no_endpoint:‘عنوان الخادم مفقود’}[r.error]||r.detail||‘فشل’;
-document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--orange)">⚠️ حُفظ — لكن تعذّر الاختبار: ‘+m+’</span>’;updateApiStatus(false);}
-}
-async function testAI(){
-document.getElementById(‘aiStatus’).innerHTML=’<span style="color:var(--cyan)">⏳ يختبر…</span>’;
-const r=await callAI(‘قل “متصل”’,20);
-document.getElementById(‘aiStatus’).innerHTML=r.ok?’<span style="color:var(--green)">✅ الاتصال يعمل</span>’:’<span style="color:var(--red)">❌ ‘+(r.detail||r.error)+’</span>’;
-updateApiStatus(r.ok);
+async function testAnthropic(){
+  document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر...</span>';
+  const r=await callClaude('قل "متصل" فقط',20);
+  document.getElementById('anthropicStatus').innerHTML=r.ok?'<span style="color:var(--green)">✅ الاتصال يعمل</span>':'<span style="color:var(--red)">❌ فشل: '+(r.error||'')+'</span>';
+  updateApiStatus(r.ok);
 }
 function updateApiStatus(on){
-document.getElementById(‘apiDot’).className=‘status-dot ‘+(on?‘on’:‘off’);
-document.getElementById(‘apiStatusText’).textContent=on?‘متصل’:‘غير متصل’;
-document.getElementById(‘setupBanner’).style.display=on?‘none’:‘block’;
-document.getElementById(‘searchApiWarn’).style.display=on?‘none’:‘block’;
+  document.getElementById('apiDot').className='status-dot '+(on?'on':'off');
+  document.getElementById('apiStatusText').textContent=on?'AI متصل':'API غير متصل';
+  document.getElementById('setupBanner').style.display=on?'none':'block';
+  document.getElementById('searchApiWarn').style.display=on?'none':'block';
 }
-async function saveDataProvider(){APP.config.dataProvider=document.getElementById(‘dataProvider’).value;
-APP.config.dataKey=document.getElementById(‘dataKey’).value.trim();await DB.set(‘config’,APP.config);
-document.getElementById(‘dataStatus’).innerHTML=’<span style="color:var(--green)">✅ تم الحفظ</span>’;}
+async function saveGoogleKey(){APP.config.googleKey=document.getElementById('googleKey').value.trim();await DB.set('config',APP.config);
+  document.getElementById('googleStatus').innerHTML='<span style="color:var(--green)">✅ تم الحفظ</span>';}
 async function saveBackend(){
-APP.config.backendUrl=document.getElementById(‘backendUrl’).value.trim();
-APP.config.senderName=document.getElementById(‘senderName’).value.trim();
-APP.config.senderEmail=document.getElementById(‘senderEmail’).value.trim();
-await DB.set(‘config’,APP.config);
-if(!APP.config.backendUrl){document.getElementById(‘backendStatus’).innerHTML=’<span style="color:var(--orange)">حُفظ — بدون رابط خادم لن يُرسل بريد فعلي</span>’;return;}
-document.getElementById(‘backendStatus’).innerHTML=’<span style="color:var(--cyan)">⏳ يختبر…</span>’;
-try{const r=await fetch(APP.config.backendUrl.replace(//$/,’’)+’/api/health’);
-document.getElementById(‘backendStatus’).innerHTML=r.ok?’<span style="color:var(--green)">✅ الخادم متصل</span>’:’<span style="color:var(--orange)">⚠️ لا يستجيب صحيحاً</span>’;
-}catch(e){document.getElementById(‘backendStatus’).innerHTML=’<span style="color:var(--orange)">⚠️ تعذّر الوصول — تحقق من الرابط</span>’;}
+  APP.config.backendUrl=document.getElementById('backendUrl').value.trim();
+  APP.config.senderName=document.getElementById('senderName').value.trim();
+  APP.config.senderEmail=document.getElementById('senderEmail').value.trim();
+  await DB.set('config',APP.config);
+  if(!APP.config.backendUrl){document.getElementById('backendStatus').innerHTML='<span style="color:var(--orange)">حُفظ — لكن بدون رابط خادم لن يُرسل بريد فعلي</span>';return;}
+  document.getElementById('backendStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر الخادم...</span>';
+  try{const r=await fetch(APP.config.backendUrl.replace(/\/$/,'')+'/api/health');
+    document.getElementById('backendStatus').innerHTML=r.ok?'<span style="color:var(--green)">✅ الخادم متصل</span>':'<span style="color:var(--orange)">⚠️ الخادم لا يستجيب بشكل صحيح</span>';
+  }catch(e){document.getElementById('backendStatus').innerHTML='<span style="color:var(--orange)">⚠️ تعذّر الوصول للخادم — تحقق من الرابط</span>';}
 }
-async function saveWA(){APP.config.waNumber=document.getElementById(‘waNumber’).value.trim();await DB.set(‘config’,APP.config);
-document.getElementById(‘waStatus’).innerHTML=’<span style="color:var(--green)">✅ تم الحفظ</span>’;}
+async function saveWA(){APP.config.waNumber=document.getElementById('waNumber').value.trim();await DB.set('config',APP.config);
+  document.getElementById('waStatus').innerHTML='<span style="color:var(--green)">✅ تم الحفظ</span>';}
 async function saveCompanyData(){
-APP.config.myCompany=document.getElementById(‘myCompany’).value.trim();
-APP.config.myServices=document.getElementById(‘myServices’).value.trim();
-APP.config.myAdvantages=document.getElementById(‘myAdvantages’).value.trim();
-APP.config.myContact=document.getElementById(‘myContact’).value.trim();
-await DB.set(‘config’,APP.config);
-document.getElementById(‘companyStatus’).innerHTML=’<span style="color:var(--green)">✅ تم الحفظ</span>’;
+  APP.config.myCompany=document.getElementById('myCompany').value.trim();
+  APP.config.myServices=document.getElementById('myServices').value.trim();
+  APP.config.myAdvantages=document.getElementById('myAdvantages').value.trim();
+  APP.config.myContact=document.getElementById('myContact').value.trim();
+  await DB.set('config',APP.config);
+  document.getElementById('companyStatus').innerHTML='<span style="color:var(--green)">✅ تم حفظ بيانات الشركة</span>';
 }
-async function exportData(){const all={config:APP.config,leads:APP.leads,inbox:APP.inbox,campaigns:APP.campaigns};
-const b=new Blob([JSON.stringify(all,null,2)],{type:‘application/json’});
-const a=document.createElement(‘a’);a.href=URL.createObjectURL(b);a.download=‘mtc-backup.json’;a.click();showToast(‘📥 تم التصدير’);}
-async function clearAllData(){if(!confirm(‘سيُمسح كل شيء نهائياً. متأكد؟’))return;
-await DB.del(‘config’);await DB.del(‘leads’);await DB.del(‘inbox’);await DB.del(‘campaigns’);
-APP.config={};APP.leads=[];APP.inbox=[];APP.campaigns=[];showToast(‘🗑️ تم المسح’);setTimeout(()=>location.reload(),800);}
+async function exportData(){
+  const all={config:APP.config,leads:APP.leads,inbox:APP.inbox,campaigns:APP.campaigns};
+  const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mtc-backup.json';a.click();
+  showToast('📥 تم تصدير البيانات');
+}
+async function clearAllData(){
+  if(!confirm('سيتم مسح جميع العملاء والإعدادات نهائياً. متأكد؟'))return;
+  await DB.del('config');await DB.del('leads');await DB.del('inbox');await DB.del('campaigns');
+  APP.config={};APP.leads=[];APP.inbox=[];APP.campaigns=[];
+  showToast('🗑️ تم مسح كل البيانات');setTimeout(()=>location.reload(),800);
+}
 
 // ==================== DEPLOY CODE ====================
-const SERVER_CODE=`// server.js — MTC Backend (Node.js + Express)
-// يدعم: إرسال بريد + تتبع فتح + استقبال ردود + وسيط AI + جدولة
-const express=require(‘express’);
-const nodemailer=require(‘nodemailer’);
-const cors=require(‘cors’);
-const Imap=require(‘imap’);
-const cron=require(‘node-cron’);
+const SERVER_CODE=`// server.js — MTC Sales Backend (Node.js + Express)
+const express = require('express');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+const Imap = require('imap');
+const cron = require('node-cron');
 
-const app=express();
+const app = express();
 app.use(cors());
-app.use(express.json({limit:‘5mb’}));
+app.use(express.json({ limit: '5mb' }));
 
-const tracking={}; // {id:{to,sentAt,openedAt,resends}}
+// === حالة التتبع في الذاكرة (استخدم قاعدة بيانات للإنتاج) ===
+const tracking = {}; // { leadId: { sent, openedAt } }
 
-const transporter=nodemailer.createTransport({
-service:‘gmail’,
-auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}
+// === ناقل البريد ===
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
 });
 
-app.get(’/api/health’,(req,res)=>res.json({status:‘ok’}));
-
-// === وسيط الذكاء الاصطناعي (يتجاوز CORS ويحمي المفتاح) ===
-app.post(’/api/ai’,async(req,res)=>{
-const {key,model,endpoint,proto,prompt,maxTokens}=req.body;
-try{
-let url=endpoint,headers={‘Content-Type’:‘application/json’},body;
-if(proto===‘openai’){headers[‘Authorization’]=‘Bearer ‘+key;
-body=JSON.stringify({model,messages:[{role:‘user’,content:prompt}],max_tokens:maxTokens});}
-else if(proto===‘anthropic’){headers[‘x-api-key’]=key;headers[‘anthropic-version’]=‘2023-06-01’;
-body=JSON.stringify({model,max_tokens:maxTokens,messages:[{role:‘user’,content:prompt}]});}
-else if(proto===‘gemini’){url=endpoint.replace(/\/$/,’’)+’/’+model+’:generateContent?key=’+key;
-body=JSON.stringify({contents:[{parts:[{text:prompt}]}]});}
-const r=await fetch(url,{method:‘POST’,headers,body});
-const d=await r.json();
-let text=’’;
-if(proto===‘openai’)text=d.choices?.[0]?.message?.content||’’;
-else if(proto===‘anthropic’)text=(d.content||[]).map(b=>b.text).join(’’);
-else if(proto===‘gemini’)text=d.candidates?.[0]?.content?.parts?.map(p=>p.text).join(’’)||’’;
-res.json({text});
-}catch(e){res.status(500).json({error:String(e)});}
-});
+// === فحص الصحة ===
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
 
 // === إرسال بريد مع بيكسل تتبع ===
-app.post(’/api/send’,async(req,res)=>{
-const {to,body,from,fromName}=req.body;
-const id=Buffer.from(to+Date.now()).toString(‘base64url’);
-const lines=body.split(’\n’);
-let subject=‘بخصوص خدمات النقل اللوجستي’,content=body;
-if(lines[0].includes(‘الموضوع:’)){subject=lines[0].replace(/الموضوع:/,’’).trim();content=lines.slice(1).join(’\n’).trim();}
-const pixel=’<img src="'+process.env.PUBLIC_URL+'/api/track/'+id+'" width="1" height="1" style="display:none">’;
-const unsub=’<br><br><a href="'+process.env.PUBLIC_URL+'/api/unsub/'+id+'" style="color:#888;font-size:11px">إلغاء الاشتراك</a>’;
-try{
-await transporter.sendMail({from:’”’+fromName+’” <’+(from||process.env.SMTP_USER)+’>’,
-to,subject,html:content.replace(/\n/g,’<br>’)+pixel+unsub});
-tracking[id]={to,sentAt:Date.now(),openedAt:null,resends:0};
-res.json({ok:true,id});
-}catch(e){res.status(500).json({ok:false,error:String(e)});}
+app.post('/api/send', async (req, res) => {
+  const { to, body, from, fromName, leadName } = req.body;
+  const id = Buffer.from(to + Date.now()).toString('base64url');
+
+  // استخراج الموضوع من أول سطر
+  const lines = body.split('\\n');
+  let subject = 'بخصوص خدمات النقل اللوجستي';
+  let content = body;
+  if (lines[0].includes('الموضوع:')) {
+    subject = lines[0].replace(/الموضوع:/,'').trim();
+    content = lines.slice(1).join('\\n').trim();
+  }
+
+  const pixel = \`<img src="\${process.env.PUBLIC_URL}/api/track/\${id}" width="1" height="1" style="display:none">\`;
+  const unsub = \`<br><br><a href="\${process.env.PUBLIC_URL}/api/unsub/\${id}" style="color:#888;font-size:11px">إلغاء الاشتراك</a>\`;
+  const html = content.replace(/\\n/g,'<br>') + pixel + unsub;
+
+  try {
+    await transporter.sendMail({
+      from: \`"\${fromName}" <\${from || process.env.SMTP_USER}>\`,
+      to, subject, html
+    });
+    tracking[id] = { to, leadName, sentAt: Date.now(), openedAt: null };
+    res.json({ ok: true, id });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
 });
 
-app.get(’/api/track/:id’,(req,res)=>{
-const t=tracking[req.params.id];if(t&&!t.openedAt)t.openedAt=Date.now();
-res.set(‘Content-Type’,‘image/gif’).send(Buffer.from(‘R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7’,‘base64’));
+// === بيكسل التتبع: يسجّل الفتح ===
+app.get('/api/track/:id', (req, res) => {
+  const t = tracking[req.params.id];
+  if (t && !t.openedAt) t.openedAt = Date.now();
+  const px = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+  res.set('Content-Type','image/gif').send(px);
 });
-app.get(’/api/unsub/:id’,(req,res)=>{const t=tracking[req.params.id];if(t)t.unsub=true;
-res.send(’<h3 dir=rtl>تم إلغاء اشتراكك.</h3>’);});
-app.get(’/api/status’,(req,res)=>res.json(tracking));
+
+// === إلغاء الاشتراك ===
+app.get('/api/unsub/:id', (req, res) => {
+  const t = tracking[req.params.id];
+  if (t) t.unsubscribed = true;
+  res.send('<h3 dir="rtl">تم إلغاء اشتراكك. لن تصلك رسائل أخرى.</h3>');
+});
+
+// === حالة التتبع (تستعلمها الواجهة) ===
+app.get('/api/status', (req, res) => res.json(tracking));
 
 // === استقبال الردود عبر IMAP ===
-app.get(’/api/inbox’,(req,res)=>{
-const imap=new Imap({user:process.env.SMTP_USER,password:process.env.SMTP_PASS,
-host:‘imap.gmail.com’,port:993,tls:true});
-const msgs=[];
-imap.once(‘ready’,()=>imap.openBox(‘INBOX’,true,()=>{
-imap.search([‘UNSEEN’],(e,r)=>{
-if(!r||!r.length){imap.end();return res.json([]);}
-const f=imap.fetch(r.slice(-20),{bodies:‘HEADER.FIELDS (FROM SUBJECT DATE)’});
-f.on(‘message’,m=>m.on(‘body’,s=>{let b=’’;s.on(‘data’,d=>b+=d);
-s.once(‘end’,()=>msgs.push(Imap.parseHeader(b)));}));
-f.once(‘end’,()=>{imap.end();res.json(msgs);});
-});
-}));
-imap.once(‘error’,e=>res.status(500).json({error:String(e)}));
-imap.connect();
-});
-
-// === الجدولة: إعادة إرسال أسبوعياً لمن لم يفتح ===
-cron.schedule(‘0 10 * * *’,()=>{
-const now=Date.now(),week=7*24*3600*1000;
-Object.values(tracking).forEach(t=>{
-if(!t.openedAt&&!t.unsub&&(now-t.sentAt)>=week&&t.resends<3){
-t.resends++;t.sentAt=now;
-console.log(‘Resend to’,t.to,’#’,t.resends);
-// أضف منطق إعادة الإرسال بنص مُعاد صياغته هنا
-}
-});
+app.get('/api/inbox', (req, res) => {
+  const imap = new Imap({
+    user: process.env.SMTP_USER, password: process.env.SMTP_PASS,
+    host: 'imap.gmail.com', port: 993, tls: true
+  });
+  const messages = [];
+  imap.once('ready', () => {
+    imap.openBox('INBOX', true, () => {
+      imap.search(['UNSEEN'], (e, results) => {
+        if (!results || !results.length) { imap.end(); return res.json([]); }
+        const f = imap.fetch(results.slice(-20), { bodies: 'HEADER.FIELDS (FROM SUBJECT DATE)' });
+        f.on('message', m => {
+          m.on('body', s => {
+            let buf = '';
+            s.on('data', d => buf += d.toString('utf8'));
+            s.once('end', () => messages.push(Imap.parseHeader(buf)));
+          });
+        });
+        f.once('end', () => { imap.end(); res.json(messages); });
+      });
+    });
+  });
+  imap.once('error', e => res.status(500).json({ error: String(e) }));
+  imap.connect();
 });
 
-app.listen(process.env.PORT||3000,()=>console.log(‘MTC Backend running’));`;
+// === الجدولة التلقائية: إعادة الإرسال أسبوعياً لمن لم يفتح ===
+// يعمل كل يوم 10 صباحاً ويفحص من مرّ على رسالته 7 أيام دون فتح
+cron.schedule('0 10 * * *', () => {
+  const now = Date.now(), week = 7*24*60*60*1000;
+  Object.entries(tracking).forEach(([id, t]) => {
+    if (!t.openedAt && !t.unsubscribed && (now - t.sentAt) >= week && (t.resends||0) < 3) {
+      // أعد الإرسال بنص مُعاد صياغته (نادِ Anthropic API هنا لتغيير النص)
+      t.resends = (t.resends||0) + 1;
+      t.sentAt = now;
+      console.log('Resending to', t.to, 'attempt', t.resends);
+      // transporter.sendMail({...})  ← أضف منطق إعادة الإرسال
+    }
+  });
+});
 
-const PKG_CODE=`{ "name":"mtc-sales-backend", "version":"1.0.0", "main":"server.js", "scripts":{"start":"node server.js"}, "dependencies":{ "express":"^4.19.2", "nodemailer":"^6.9.13", "cors":"^2.8.5", "imap":"^0.8.19", "node-cron":"^3.0.3" } }`;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('MTC Backend on :' + PORT));`;
 
-const ENV_CODE=`# .env — لا ترفعه على GitHub SMTP_USER=alhasanim194@gmail.com SMTP_PASS=xxxx xxxx xxxx xxxx   # كلمة مرور تطبيق Gmail PUBLIC_URL=https://your-app.onrender.com PORT=3000`;
+const PKG_CODE=`{
+  "name": "mtc-sales-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13",
+    "cors": "^2.8.5",
+    "imap": "^0.8.19",
+    "node-cron": "^3.0.3"
+  }
+}`;
+
+const ENV_CODE=`# .env — متغيرات البيئة (لا ترفعها على GitHub)
+SMTP_USER=alhasanim194@gmail.com
+SMTP_PASS=xxxx xxxx xxxx xxxx   # كلمة مرور تطبيق Gmail (16 حرف)
+PUBLIC_URL=https://your-app.onrender.com   # رابط خادمك بعد النشر
+PORT=3000`;
 
 function renderDeployCode(){
-document.getElementById(‘serverCode’).textContent=SERVER_CODE;
-document.getElementById(‘pkgCode’).textContent=PKG_CODE;
-document.getElementById(‘envCode’).textContent=ENV_CODE;
-document.getElementById(‘promptSearch’).textContent=SEARCH_PROMPT(’[مجالك]’,’[القطاعات]’,’[المنطقة]’,’[الحجم]’,’[العدد]’,’[النسبة]’,’[شركتك]’);
-document.getElementById(‘promptMsg’).textContent=MSG_PROMPT({myCompany:’[شركتك]’,myServices:’[خدماتك]’,myAdvantages:’[مزاياك]’,myContact:’[تواصلك]’,company:’[العميل]’,sector:’[نشاطه]’,note:’’,typeLabel:’[نوع الرسالة]’,langInstr:’[اللغة]’});
-document.getElementById(‘promptAdapter’).textContent=ADAPTER_PROMPT;
+  document.getElementById('serverCode').textContent=SERVER_CODE;
+  document.getElementById('pkgCode').textContent=PKG_CODE;
+  document.getElementById('envCode').textContent=ENV_CODE;
+  document.getElementById('promptCode').textContent=
+'=== برومبت تحليل العملاء ===\n\n'+SEARCH_PROMPT('[القطاع]','[المدينة]','[العدد]','[النسبة]','[شركتك]')+
+'\n\n\n=== برومبت كتابة الرسالة ===\n\n'+MESSAGE_PROMPT({myCompany:'[شركتك]',myServices:'[خدماتك]',myAdvantages:'[مزاياك]',myContact:'[تواصلك]',company:'[العميل]',sector:'[قطاعه]',note:'',typeLabel:'[نوع الرسالة]',langInstr:'[اللغة]'});
 }
-function copyCode(id,label){navigator.clipboard.writeText(document.getElementById(id).textContent);showToast(’📋 تم نسخ ’+label);}
+function copyServerCode(){navigator.clipboard.writeText(SERVER_CODE);showToast('📋 تم نسخ كود الخادم');}
+function copyPkg(){navigator.clipboard.writeText(PKG_CODE);showToast('📋 تم النسخ');}
+function copyEnv(){navigator.clipboard.writeText(ENV_CODE);showToast('📋 تم النسخ');}
+function copyPrompt(){navigator.clipboard.writeText(document.getElementById('promptCode').textContent);showToast('📋 تم نسخ البرومبت');}
 
 // ==================== UTILS ====================
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function closeModal(id){document.getElementById(id).classList.remove(‘open’);}
-function showToast(m){const t=document.getElementById(‘toast’);t.textContent=m;t.style.display=‘block’;
-clearTimeout(t._t);t._t=setTimeout(()=>t.style.display=‘none’,3300);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3200);}
 
 // ==================== INIT ====================
 (async function init(){
-APP.config=await DB.get(‘config’,{})||{};
-APP.leads=await DB.get(‘leads’,[])||[];
-APP.inbox=await DB.get(‘inbox’,[])||[];
-APP.campaigns=await DB.get(‘campaigns’,[])||[];
-renderProviders();
-if(APP.config.aiProvider){pickProvider(APP.config.aiProvider);}
-if(APP.config.aiKey)document.getElementById(‘aiKey’).value=APP.config.aiKey;
-if(APP.config.aiModel)document.getElementById(‘aiModel’).value=APP.config.aiModel;
-if(APP.config.aiEndpoint)document.getElementById(‘aiEndpoint’).value=APP.config.aiEndpoint;
-if(APP.config.dataProvider)document.getElementById(‘dataProvider’).value=APP.config.dataProvider;
-if(APP.config.backendUrl)document.getElementById(‘backendUrl’).value=APP.config.backendUrl;
-if(APP.config.senderName)document.getElementById(‘senderName’).value=APP.config.senderName;
-if(APP.config.senderEmail)document.getElementById(‘senderEmail’).value=APP.config.senderEmail;
-if(APP.config.waNumber)document.getElementById(‘waNumber’).value=APP.config.waNumber;
-if(APP.config.myCompany)document.getElementById(‘myCompany’).value=APP.config.myCompany;
-if(APP.config.myServices)document.getElementById(‘myServices’).value=APP.config.myServices;
-if(APP.config.myAdvantages)document.getElementById(‘myAdvantages’).value=APP.config.myAdvantages;
-if(APP.config.myContact)document.getElementById(‘myContact’).value=APP.config.myContact;
-updateApiStatus(!!(APP.config.aiProvider&&APP.config.aiKey));
-refreshStats();renderDashboardCharts();renderDashSchedule();renderDomains();
-if(APP.campaigns.length)renderPastCampaigns();
+  APP.config=await DB.get('config',{})||{};
+  APP.leads=await DB.get('leads',[])||[];
+  APP.inbox=await DB.get('inbox',[])||[];
+  APP.campaigns=await DB.get('campaigns',[])||[];
+
+  // Restore settings UI
+  if(APP.config.anthropicKey)document.getElementById('anthropicKey').value=APP.config.anthropicKey;
+  if(APP.config.anthropicModel)document.getElementById('anthropicModel').value=APP.config.anthropicModel;
+  if(APP.config.googleKey)document.getElementById('googleKey').value=APP.config.googleKey;
+  if(APP.config.backendUrl)document.getElementById('backendUrl').value=APP.config.backendUrl;
+  if(APP.config.senderName)document.getElementById('senderName').value=APP.config.senderName;
+  if(APP.config.senderEmail)document.getElementById('senderEmail').value=APP.config.senderEmail;
+  if(APP.config.waNumber)document.getElementById('waNumber').value=APP.config.waNumber;
+  if(APP.config.myCompany)document.getElementById('myCompany').value=APP.config.myCompany;
+  if(APP.config.myServices)document.getElementById('myServices').value=APP.config.myServices;
+  if(APP.config.myAdvantages)document.getElementById('myAdvantages').value=APP.config.myAdvantages;
+  if(APP.config.myContact)document.getElementById('myContact').value=APP.config.myContact;
+
+  updateApiStatus(!!(APP.config.anthropicKey&&APP.config.anthropicKey.startsWith('sk-ant')));
+  refreshStats();
+  renderDashboardCharts();
+  renderDashSchedule();
+  if(APP.campaigns.length)renderPastCampaigns();
 })();
 </script>
-
 </body>
 </html>
