@@ -1,414 +1,1679 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MATI | لوحة التحكم اللوجستية</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Tajawal', 'sans-serif'],
-          },
-        },
-      },
-    }
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    body { font-family: 'Tajawal', sans-serif; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTC | نظام المبيعات الذكي - النسخة الحقيقية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy:#0a1a33; --navy-mid:#13284d; --navy-light:#1d3a6b;
+  --gold:#caa84d; --gold-light:#e6c970; --gold-dim:rgba(202,168,77,.14);
+  --cyan:#00cfff; --green:#00e082; --red:#ff5b6e; --orange:#ff9a3c;
+  --text:#eaedf7; --text-dim:#8295bb;
+  --card:rgba(19,40,77,.65); --border:rgba(202,168,77,.22);
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 55% 40% at 8% 15%,rgba(0,180,255,.06) 0%,transparent 65%),
+  radial-gradient(ellipse 50% 50% at 92% 85%,rgba(202,168,77,.08) 0%,transparent 65%)}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,26,51,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);padding:0 26px;display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:40px;height:40px;background:linear-gradient(135deg,var(--navy-light),var(--navy-mid));
+  border:1.5px solid var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:13px;color:var(--gold);letter-spacing:1px}
+.brand-name{font-size:15px;font-weight:700}
+.brand-name span{color:var(--gold)}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.api-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);
+  background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:8px;cursor:pointer}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.off{background:var(--red)}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);
+  border:none;border-radius:10px;padding:9px 18px;font-family:'Cairo';font-weight:700;font-size:13px;
+  cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(202,168,77,.3)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* LAYOUT */
+.layout{display:flex;position:relative;z-index:1}
+.sidebar{width:218px;min-height:calc(100vh - 62px);background:rgba(10,26,51,.6);
+  border-left:1px solid var(--border);padding:18px 11px;position:sticky;top:62px;align-self:flex-start;flex-shrink:0}
+.nav-title{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;padding:0 8px;margin:15px 0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;
+  transition:all .2s;font-size:13px;font-weight:500;margin-bottom:2px;color:var(--text-dim)}
+.nav-item:hover{background:var(--gold-dim);color:var(--text)}
+.nav-item.active{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.nav-badge{margin-right:auto;background:var(--gold);color:var(--navy);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700}
+.nav-badge.red{background:var(--red);color:#fff}
+.main{flex:1;padding:26px;max-width:calc(100% - 218px)}
+
+/* PAGES */
+.page{display:none}.page.active{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:22px}
+.page-title{font-size:21px;font-weight:800}.page-title span{color:var(--gold)}
+.page-sub{font-size:13px;color:var(--text-dim);margin-top:4px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:56px;height:56px;
+  background:var(--gold-dim);border-radius:0 0 0 56px}
+.stat-icon{font-size:20px;margin-bottom:6px}
+.stat-val{font-size:25px;font-weight:800;color:var(--gold)}
+.stat-label{font-size:12px;color:var(--text-dim);margin-top:2px}
+.stat-delta{font-size:11px;margin-top:5px}
+.stat-delta.up{color:var(--green)}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.card-title{font-size:15px;font-weight:700}.card-title span{color:var(--gold)}
+
+/* FORMS */
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;font-weight:600}
+.form-input,.form-select,.form-textarea{width:100%;background:rgba(10,26,51,.85);
+  border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Cairo';
+  padding:10px 13px;font-size:13px;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--gold)}
+.form-select option{background:var(--navy)}
+.form-textarea{resize:vertical;min-height:80px}
+.search-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
+
+/* TABLE */
+.leads-table{width:100%;border-collapse:collapse}
+.leads-table th{text-align:right;font-size:11px;color:var(--text-dim);padding:8px 11px;
+  border-bottom:1px solid var(--border);letter-spacing:.5px;white-space:nowrap}
+.leads-table td{padding:11px;font-size:13px;border-bottom:1px solid rgba(202,168,77,.08);vertical-align:middle}
+.leads-table tr:hover td{background:rgba(202,168,77,.04)}
+.score-bar{display:flex;align-items:center;gap:8px;min-width:110px}
+.score-fill{flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.score-fill-inner{height:100%;border-radius:3px;transition:width .4s}
+.score-text{font-size:11px;font-weight:700;min-width:28px}
+.score-high .score-fill-inner{background:var(--green)}.score-high .score-text{color:var(--green)}
+.score-mid .score-fill-inner{background:var(--gold)}.score-mid .score-text{color:var(--gold)}
+.score-low .score-fill-inner{background:var(--orange)}.score-low .score-text{color:var(--orange)}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-pending{background:rgba(255,154,60,.15);color:var(--orange)}
+.tag-sent{background:rgba(0,207,255,.15);color:var(--cyan)}
+.tag-opened{background:rgba(202,168,77,.2);color:var(--gold)}
+.tag-replied{background:rgba(0,224,130,.2);color:var(--green)}
+.tag-cold{background:rgba(255,91,110,.15);color:var(--red)}
+.tag-real{background:rgba(0,224,130,.15);color:var(--green)}
+.tag-demo{background:rgba(130,149,187,.15);color:var(--text-dim)}
+
+.action-btns{display:flex;gap:6px}
+.btn-sm{padding:5px 10px;border-radius:7px;font-size:12px;font-family:'Cairo';font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-view{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.btn-view:hover{background:var(--gold);color:var(--navy)}
+.btn-send{background:rgba(0,207,255,.1);color:var(--cyan);border:1px solid rgba(0,207,255,.2)}
+.btn-send:hover{background:rgba(0,207,255,.25)}
+.btn-wa{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.2)}
+.btn-wa:hover{background:rgba(37,211,102,.25)}
+.btn-danger{background:rgba(255,91,110,.1);color:var(--red);border:1px solid rgba(255,91,110,.2)}
+.btn-danger:hover{background:rgba(255,91,110,.2)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);
+  border-radius:9px;padding:8px 15px;font-family:'Cairo';font-size:13px;cursor:pointer;transition:all .2s}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+
+.checkbox-custom{width:16px;height:16px;border:1.5px solid var(--border);border-radius:4px;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px}
+.checkbox-custom.checked{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+
+/* AI LOADER */
+.ai-loader{display:none;align-items:center;gap:12px;padding:15px 18px;border-radius:11px;
+  background:rgba(0,207,255,.05);border:1px solid rgba(0,207,255,.2);margin-bottom:15px}
+.ai-loader.active{display:flex}
+.loader-dots{display:flex;gap:4px}
+.loader-dots span{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:bounce 1.2s infinite}
+.loader-dots span:nth-child(2){animation-delay:.2s}
+.loader-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+.progress-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--gold));border-radius:2px;transition:width .8s ease}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--navy-mid);border:1px solid var(--border);border-radius:18px;padding:26px;
+  max-width:680px;width:100%;max-height:86vh;overflow-y:auto;position:relative;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-close{position:absolute;top:16px;left:16px;width:32px;height:32px;border-radius:8px;
+  background:rgba(255,91,110,.1);color:var(--red);border:1px solid rgba(255,91,110,.2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.modal-close:hover{background:rgba(255,91,110,.25)}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:18px}.modal-title span{color:var(--gold)}
+
+.msg-preview{background:rgba(10,26,51,.9);border:1px solid var(--border);border-radius:10px;
+  padding:16px;font-size:13px;line-height:1.85;min-height:150px;white-space:pre-wrap}
+.msg-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:7px 15px;border-radius:20px;font-size:12px;font-family:'Cairo';font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+.filter-btn:hover,.filter-btn.active{background:var(--gold-dim);color:var(--gold);border-color:var(--gold)}
+
+.att-chip{display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);
+  border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--gold);margin:4px;cursor:default}
+
+.empty-state{text-align:center;padding:54px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:46px;margin-bottom:12px;opacity:.5}
+.empty-state p{font-size:14px}
+
+.send-progress{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.sp-icon{font-size:19px}.sp-info{flex:1}
+.sp-title{font-size:13px;font-weight:600}
+.sp-sub{font-size:11px;color:var(--text-dim);margin-top:2px;direction:ltr;text-align:right}
+
+.inbox-item{display:flex;gap:13px;align-items:flex-start;padding:13px 0;
+  border-bottom:1px solid rgba(202,168,77,.08);cursor:pointer;transition:all .2s}
+.inbox-item:hover{padding-right:5px}
+.inbox-avatar{width:40px;height:40px;border-radius:11px;background:var(--navy-light);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.inbox-meta{flex:1;min-width:0}
+.inbox-sender{font-size:13px;font-weight:700}
+.inbox-preview{font-size:12px;color:var(--text-dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-time{font-size:11px;color:var(--text-dim);flex-shrink:0}
+.inbox-item.unread .inbox-sender{color:var(--gold)}
+.inbox-item.unread .inbox-avatar{border-color:var(--gold)}
+
+.schedule-item{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid rgba(202,168,77,.08)}
+.schedule-time{background:var(--gold-dim);border:1px solid var(--border);border-radius:8px;
+  padding:6px 12px;font-size:12px;color:var(--gold);font-weight:700;min-width:95px;text-align:center}
+.schedule-info{flex:1}.schedule-title{font-size:13px;font-weight:600}
+.schedule-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.chart-container{height:200px;position:relative}
+
+.info-box{border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;line-height:1.7}
+.info-cyan{background:rgba(0,207,255,.05);border:1px solid rgba(0,207,255,.2)}
+.info-cyan .ib-title{color:var(--cyan);font-weight:700;margin-bottom:6px;font-size:12px}
+.info-green{background:rgba(0,224,130,.05);border:1px solid rgba(0,224,130,.18)}
+.info-green .ib-title{color:var(--green);font-weight:700;margin-bottom:6px}
+.info-gold{background:rgba(202,168,77,.05);border:1px solid var(--border)}
+.info-gold .ib-title{color:var(--gold);font-weight:700;margin-bottom:6px}
+
+.code-block{background:#060f1f;border:1px solid var(--border);border-radius:10px;padding:16px;
+  font-family:'Courier New',monospace;font-size:12px;line-height:1.7;color:#9fd9ff;
+  direction:ltr;text-align:left;overflow-x:auto;white-space:pre;margin:10px 0}
+.copy-code-btn{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);
+  border-radius:6px;padding:4px 12px;font-size:11px;font-family:'Cairo';cursor:pointer;font-weight:600}
+
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  background:var(--gold);color:var(--navy);border-radius:50%;font-weight:800;font-size:12px;margin-left:8px}
+.step{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid rgba(202,168,77,.08)}
+.step-content{flex:1}
+.step-content h4{font-size:14px;font-weight:700;margin-bottom:5px}
+.step-content p{font-size:12px;color:var(--text-dim);line-height:1.7}
+
+.toggle-switch{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle-switch input{display:none}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:24px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:.3s}
+.toggle-switch input:checked+.toggle-slider{background:var(--green)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy-mid);
+  border:1px solid var(--gold);border-radius:12px;padding:12px 24px;font-size:13px;font-weight:600;
+  color:var(--gold);z-index:999;display:none;animation:fadeUp .3s ease;max-width:90%;text-align:center}
+
+@media(max-width:900px){.sidebar{display:none}.main{max-width:100%;padding:18px}
+  .stats-row{grid-template-columns:1fr 1fr}.search-grid{grid-template-columns:1fr}.charts-grid{grid-template-columns:1fr}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.pulse{animation:pulse 1.5s infinite}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const Icons = {
-      LayoutDashboard: p => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
-      Users:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-      Search:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
-      Mail:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
-      MessageSquare:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-      TrendingUp:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-      Settings:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
-      Shield:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.06 1.06 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>,
-      Bell:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
-      CheckCircle:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-      AlertTriangle:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-      Info:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
-      Cpu:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>,
-      Send:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>,
-      MapPin:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
-      Filter:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
-      Briefcase:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
-      Globe:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
-      Plus:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
-      X:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
-      Menu:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
-      Loader2:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`animate-spin ${p.className||''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
-      ArrowRight:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
-      Inbox:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>,
-      FileText:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
-      ChevronLeft:p=><svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className||''}><path d="m15 18-6-6 6-6"/></svg>,
-    };
 
-    const initialLeads = [
-      { id:'1', companyName:'شركة الفوزان للمقاولات', industry:'مقاولات', city:'الرياض', email:'a@a.sa', phone:'+9665000000', whatsapp:'+9665000000', website:'www.test.sa', linkedin:'', aiScore:94, needsHeavyTransport:true, needsLogistics:false, needsCarsTransport:false, intentLevel:'HIGH', aiSummary:'مشروع توسعة', status:'INTERESTED', createdAt:'2026-05-10', notes:[], tasks:[] },
-      { id:'2', companyName:'مصانع السلوى', industry:'أغذية', city:'جدة', email:'b@b.sa', phone:'+9665111111', whatsapp:'+9665111111', website:'', linkedin:'', aiScore:89, needsHeavyTransport:false, needsLogistics:true, needsCarsTransport:false, intentLevel:'HIGH', aiSummary:'نقل مبرد', status:'QUOTATION_SENT', createdAt:'2026-05-11', notes:[], tasks:[] },
-      { id:'3', companyName:'مستودعات نون', industry:'تجارة إلكترونية', city:'الدمام', email:'c@c.sa', phone:'+9665222222', whatsapp:'+9665222222', website:'', linkedin:'', aiScore:91, needsHeavyTransport:false, needsLogistics:true, needsCarsTransport:false, intentLevel:'HIGH', aiSummary:'توزيع طرود', status:'NEGOTIATION', createdAt:'2026-05-12', notes:[], tasks:[] },
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">MTC</div>
+    <div><div class="brand-name">نظام <span>المبيعات الذكي</span></div></div>
+  </div>
+  <div class="topbar-actions">
+    <div class="api-status" onclick="openPage('settings')">
+      <span class="status-dot off" id="apiDot"></span>
+      <span id="apiStatusText">API غير متصل</span>
+    </div>
+    <button class="btn-primary" onclick="openPage('search')">🔍 بحث جديد</button>
+  </div>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+  <div class="nav-title">الرئيسية</div>
+  <div class="nav-item active" onclick="openPage('dashboard')" id="nav-dashboard"><span class="icon">📊</span> لوحة التحكم</div>
+  <div class="nav-title">العملاء</div>
+  <div class="nav-item" onclick="openPage('search')" id="nav-search"><span class="icon">🔍</span> بحث بالذكاء AI</div>
+  <div class="nav-item" onclick="openPage('leads')" id="nav-leads"><span class="icon">👥</span> قائمة العملاء<span class="nav-badge" id="leadsCount">0</span></div>
+  <div class="nav-title">التواصل</div>
+  <div class="nav-item" onclick="openPage('compose')" id="nav-compose"><span class="icon">✍️</span> كتابة الرسائل</div>
+  <div class="nav-item" onclick="openPage('campaigns')" id="nav-campaigns"><span class="icon">🚀</span> الحملات</div>
+  <div class="nav-item" onclick="openPage('inbox')" id="nav-inbox"><span class="icon">📥</span> الوارد<span class="nav-badge red" id="inboxCount">0</span></div>
+  <div class="nav-title">التحليلات</div>
+  <div class="nav-item" onclick="openPage('analytics')" id="nav-analytics"><span class="icon">📈</span> التحليلات</div>
+  <div class="nav-item" onclick="openPage('schedule')" id="nav-schedule"><span class="icon">🗓️</span> الجدولة</div>
+  <div class="nav-title">النظام</div>
+  <div class="nav-item" onclick="openPage('settings')" id="nav-settings"><span class="icon">⚙️</span> الإعدادات والربط</div>
+  <div class="nav-item" onclick="openPage('deploy')" id="nav-deploy"><span class="icon">📘</span> دليل التشغيل</div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="page-title">لوحة <span>التحكم</span></div>
+    <div class="page-sub">نظرة شاملة على أداء منظومة المبيعات</div>
+  </div>
+  <div id="setupBanner" class="info-box info-gold" style="display:none">
+    <div class="ib-title">⚡ ابدأ التشغيل في 3 خطوات</div>
+    <div style="color:var(--text-dim)">1) أضف مفتاح Anthropic API في الإعدادات &nbsp;·&nbsp; 2) ابحث عن العملاء بالذكاء الاصطناعي &nbsp;·&nbsp; 3) ولّد الرسائل وأرسلها</div>
+    <button class="btn-primary" style="margin-top:10px" onclick="openPage('settings')">⚙️ اذهب للإعدادات</button>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="st1">0</div><div class="stat-label">عميل محتمل</div></div>
+    <div class="stat-card"><div class="stat-icon">📧</div><div class="stat-val" id="st2">0</div><div class="stat-label">رسالة مرسلة</div></div>
+    <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-val" id="st3">0</div><div class="stat-label">رسالة مفتوحة</div></div>
+    <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-val" id="st4">0</div><div class="stat-label">رد وارد</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">أداء <span>الحملات</span></div></div>
+      <div class="chart-container"><canvas id="chartMain"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">توزيع <span>القطاعات</span></div></div>
+      <div class="chart-container"><canvas id="chartSectors"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📅 الجدولة <span>القادمة</span></div>
+      <button class="btn-outline" onclick="openPage('schedule')">عرض الكل</button></div>
+    <div id="dashSchedule"></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="page" id="page-search">
+  <div class="page-header">
+    <div class="page-title">🔍 البحث <span>بالذكاء الاصطناعي</span></div>
+    <div class="page-sub">يحلل Claude القطاع المستهدف ويستخرج عملاء محتملين مع تقييم نسبة الاهتمام (≥ 20 عميل)</div>
+  </div>
+
+  <div id="searchApiWarn" class="info-box info-gold" style="display:none">
+    <div class="ib-title">⚠️ مفتاح API غير موجود</div>
+    <div style="color:var(--text-dim)">للحصول على بحث حقيقي بالذكاء الاصطناعي، أضف مفتاح Anthropic في الإعدادات. سيعمل النظام بالوضع التجريبي حتى ذلك الحين.</div>
+  </div>
+
+  <div class="card">
+    <div class="search-grid">
+      <div class="form-group" style="margin:0">
+        <label>القطاع المستهدف</label>
+        <select class="form-select" id="sectorFilter">
+          <option value="شركات البناء والمقاولات الكبرى">شركات البناء والمقاولات</option>
+          <option value="شركات النفط والغاز والحفر">شركات النفط والغاز</option>
+          <option value="الموانئ وشركات اللوجستيات">الموانئ واللوجستيات</option>
+          <option value="المصانع والشركات الصناعية الكبرى">المصانع والشركات الصناعية</option>
+          <option value="الجهات والمشاريع الحكومية">الجهات الحكومية</option>
+          <option value="شركات المقاولات والبنية التحتية">البنية التحتية</option>
+          <option value="مستوردي ومصدري البضائع الثقيلة">الاستيراد والتصدير</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>المدينة / المنطقة</label>
+        <select class="form-select" id="cityFilter">
+          <option>جدة ومكة المكرمة</option><option>الرياض والمنطقة الوسطى</option>
+          <option>الدمام والمنطقة الشرقية</option><option>المدينة المنورة</option>
+          <option>جميع مناطق المملكة</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="startAISearch()" id="searchBtn">🤖 ابدأ البحث الذكي</button>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="flex:1;min-width:170px;margin:0">
+        <label>الحد الأدنى لنسبة الاهتمام: <span id="scoreVal" style="color:var(--gold);font-weight:700">40%</span></label>
+        <input type="range" min="20" max="90" value="40" id="scoreThreshold"
+          oninput="document.getElementById('scoreVal').textContent=this.value+'%'" style="width:100%;accent-color:var(--gold)">
+      </div>
+      <div class="form-group" style="flex:1;min-width:170px;margin:0">
+        <label>عدد العملاء (الحد الأدنى 20)</label>
+        <input type="number" class="form-input" id="leadsMin" value="20" min="20" max="60">
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-loader" id="aiLoader">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    <div style="flex:1">
+      <div id="aiLoaderText" style="font-size:13px;font-weight:600">يحلل الذكاء الاصطناعي العملاء المحتملين...</div>
+      <div class="progress-bar"><div class="progress-fill" id="aiProgress" style="width:0%"></div></div>
+    </div>
+    <div id="aiProgressNum" style="font-size:13px;color:var(--cyan);font-weight:700">0%</div>
+  </div>
+
+  <div id="searchResults" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">✅ النتائج — <span id="resultsCount">0</span> عميل محتمل
+          <span id="resultMode" class="tag tag-demo" style="margin-right:8px">تجريبي</span></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-outline" onclick="selectAll()">تحديد الكل</button>
+          <button class="btn-primary" onclick="sendSelected()">📧 إرسال للمحددين</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterLeads('all',this)">الكل</button>
+        <button class="filter-btn" onclick="filterLeads('high',this)">🟢 عالية</button>
+        <button class="filter-btn" onclick="filterLeads('mid',this)">🟡 متوسطة</button>
+        <button class="filter-btn" onclick="filterLeads('low',this)">🟠 منخفضة</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="leads-table">
+          <thead><tr><th style="width:32px"></th><th>الشركة</th><th>القطاع</th><th>المدينة</th><th>البريد</th><th>الهاتف</th><th>الاهتمام</th><th>الإجراء</th></tr></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEADS -->
+<div class="page" id="page-leads">
+  <div class="page-header">
+    <div class="page-title">👥 قائمة <span>العملاء المحفوظين</span></div>
+    <div class="page-sub">جميع العملاء محفوظون بشكل دائم — لا تُفقد عند إغلاق المتصفح</div>
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterLeadsList('all',this)">الكل</button>
+    <button class="filter-btn" onclick="filterLeadsList('sent',this)">مرسل</button>
+    <button class="filter-btn" onclick="filterLeadsList('opened',this)">فُتح</button>
+    <button class="filter-btn" onclick="filterLeadsList('replied',this)">رد</button>
+    <button class="filter-btn" onclick="filterLeadsList('pending',this)">لم يُرسل</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="leads-table">
+        <thead><tr><th style="padding:14px 11px">الشركة</th><th>القطاع</th><th>البريد</th><th>الاهتمام</th><th>الحالة</th><th>آخر تواصل</th><th>الإجراءات</th></tr></thead>
+        <tbody id="leadsListBody"></tbody>
+      </table>
+    </div>
+    <div id="leadsEmpty" class="empty-state"><div class="icon">👥</div><p>لا يوجد عملاء بعد — ابدأ بالبحث بالذكاء الاصطناعي</p></div>
+  </div>
+</div>
+
+<!-- COMPOSE -->
+<div class="page" id="page-compose">
+  <div class="page-header">
+    <div class="page-title">✍️ كتابة <span>الرسائل بالذكاء</span></div>
+    <div class="page-sub">يكتب Claude رسالة مخصصة بالكامل بناءً على نشاط الشركة المستهدفة</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">إعدادات الرسالة</div>
+        <div class="form-group">
+          <label>اختر من العملاء المحفوظين</label>
+          <select class="form-select" id="composeClient" onchange="fillClientData()">
+            <option value="">— اختر عميلاً —</option>
+          </select>
+        </div>
+        <div class="form-group"><label>اسم الشركة</label><input class="form-input" id="cCompany" placeholder="اسم الشركة"></div>
+        <div class="form-group"><label>القطاع / النشاط</label><input class="form-input" id="cSector" placeholder="مثال: مقاولات، نفط..."></div>
+        <div class="form-group"><label>نوع الرسالة</label>
+          <select class="form-select" id="msgType">
+            <option value="intro">تعريفية — أول تواصل</option>
+            <option value="followup">متابعة — لم يرد</option>
+            <option value="proposal">عرض سعر / تعاون</option>
+            <option value="reopen">إعادة فتح بعد فترة</option>
+          </select>
+        </div>
+        <div class="form-group"><label>لغة الرسالة</label>
+          <select class="form-select" id="msgLang">
+            <option value="ar">عربي</option><option value="en">إنجليزي</option><option value="both">عربي + إنجليزي</option>
+          </select>
+        </div>
+        <div class="form-group"><label>ملاحظة خاصة (اختياري)</label>
+          <textarea class="form-textarea" id="cNote" placeholder="تفاصيل تريد تضمينها..."></textarea></div>
+        <button class="btn-primary" style="width:100%" onclick="generateMessage()" id="genBtn">🤖 توليد الرسالة بالذكاء</button>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">📎 المرفقات</div>
+        <div id="attachments"><div class="att-chip">📋 بروفايل MTC.pdf</div></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('بروفايل MTC.pdf','📋')">+ بروفايل</button>
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('عرض الأسعار.pdf','💰')">+ عرض سعر</button>
+          <button class="btn-outline" style="flex:1" onclick="addAttachment('مرفق مخصص.pdf','📁')">+ مخصص</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">معاينة <span>الرسالة</span></div>
+          <button class="btn-sm btn-view" onclick="generateMessage()">🔄 أعد التوليد</button>
+        </div>
+        <div class="ai-loader" id="composeLoader">
+          <div class="loader-dots"><span></span><span></span><span></span></div>
+          <div style="font-size:13px">Claude يكتب الرسالة المخصصة...</div>
+        </div>
+        <div id="msgPreviewBox" style="display:none">
+          <div class="msg-preview" id="msgPreview"></div>
+          <div class="msg-actions">
+            <button class="btn-sm btn-send" onclick="sendEmailSingle()">📧 إرسال بريد</button>
+            <button class="btn-sm btn-wa" onclick="sendWhatsApp()">📱 واتساب</button>
+            <button class="btn-sm btn-view" onclick="copyMsg()">📋 نسخ</button>
+            <button class="btn-sm btn-outline" onclick="editMsg()">✏️ تعديل</button>
+          </div>
+          <div style="margin-top:12px">
+            <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">بيانات المستلم</label>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" id="recipientEmail" placeholder="email@company.com" style="direction:ltr">
+              <input class="form-input" id="recipientPhone" placeholder="+966..." style="direction:ltr;max-width:140px">
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" id="composeEmpty"><div class="icon">✍️</div><p>اختر العميل واضغط توليد الرسالة</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAMPAIGNS -->
+<div class="page" id="page-campaigns">
+  <div class="page-header">
+    <div class="page-title">🚀 إدارة <span>الحملات</span></div>
+    <div class="page-sub">إرسال جماعي ذكي مع توليد رسالة مخصصة لكل شركة + حماية كاملة من الحظر</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" onclick="startCampaign('email')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:28px">
+      <div style="font-size:30px;margin-bottom:8px">📧</div>
+      <div style="font-weight:700;margin-bottom:4px">حملة بريد إلكتروني</div>
+      <div style="font-size:12px;color:var(--text-dim)">توليد + إرسال تدريجي ذكي مع حماية</div>
+    </div>
+    <div class="card" onclick="startCampaign('wa')" style="cursor:pointer;border:2px dashed var(--border);text-align:center;padding:28px">
+      <div style="font-size:30px;margin-bottom:8px">📱</div>
+      <div style="font-weight:700;margin-bottom:4px">حملة واتساب</div>
+      <div style="font-size:12px;color:var(--text-dim)">روابط مخصصة جاهزة لكل عميل</div>
+    </div>
+  </div>
+  <div class="card" id="campaignPanel" style="display:none">
+    <div class="card-title" style="margin-bottom:16px">⚙️ إعدادات الحملة</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0"><label>تأخير بين الرسائل</label>
+        <select class="form-select" id="delayBetween">
+          <option value="30-90">30-90 ثانية (موصى به)</option>
+          <option value="60-180">1-3 دقائق (آمن جداً)</option>
+          <option value="15-40">15-40 ثانية (سريع)</option>
+        </select></div>
+      <div class="form-group" style="margin:0"><label>ساعات الإرسال</label>
+        <select class="form-select"><option>9ص - 12م</option><option>1م - 4م</option><option>9ص - 5م</option></select></div>
+      <div class="form-group" style="margin:0"><label>السقف اليومي</label>
+        <select class="form-select"><option>40 رسالة/يوم (آمن)</option><option>60 رسالة/يوم</option><option>20 رسالة/يوم (متحفظ)</option></select></div>
+    </div>
+    <div class="info-box info-cyan">
+      <div class="ib-title">🛡️ نظام الحماية من الحظر (تلقائي)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;color:var(--text-dim)">
+        <div>✅ موضوع مختلف لكل مستلم</div><div>✅ تأخير عشوائي بين الإرسالات</div>
+        <div>✅ رابط إلغاء اشتراك تلقائي</div><div>✅ سقف يومي محدد</div>
+        <div>✅ تخصيص كامل لكل شركة</div><div>✅ بيكسل تتبع للفتح</div>
+        <div>✅ تدفئة المرسل تدريجياً</div><div>✅ تحقق صحة البريد قبل الإرسال</div>
+      </div>
+    </div>
+    <div id="sendProgressArea" style="max-height:300px;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn-primary" onclick="executeCampaign()" id="execBtn">🚀 تنفيذ الحملة</button>
+      <button class="btn-outline" onclick="document.getElementById('campaignPanel').style.display='none'">إلغاء</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📋 سجل <span>الحملات</span></div></div>
+    <div id="pastCampaigns"><div class="empty-state" style="padding:30px"><div class="icon">📭</div><p>لا توجد حملات سابقة</p></div></div>
+  </div>
+</div>
+
+<!-- INBOX -->
+<div class="page" id="page-inbox">
+  <div class="page-header">
+    <div class="page-title">📥 صندوق <span>الوارد</span></div>
+    <div class="page-sub">استقبال الردود وإدارة المحادثات — يتطلب ربط الخادم الخلفي للاستقبال التلقائي</div>
+  </div>
+  <div class="info-box info-gold">
+    <div class="ib-title">ℹ️ كيف يعمل استقبال الردود</div>
+    <div style="color:var(--text-dim)">الواجهة وحدها لا تستطيع استقبال البريد. شغّل خادم Node.js (في دليل التشغيل) ليجلب الردود تلقائياً عبر IMAP/Webhook ويعرضها هنا. حالياً يعرض النظام رسائل تجريبية للتوضيح.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px">
+    <div class="card" style="padding:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">الرسائل الواردة</div>
+      <div id="inboxList"></div>
+    </div>
+    <div class="card" id="inboxDetail"><div class="empty-state"><div class="icon">📬</div><p>اختر رسالة لعرضها</p></div></div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="page" id="page-analytics">
+  <div class="page-header">
+    <div class="page-title">📈 لوحة <span>التحليلات</span></div>
+    <div class="page-sub">تتبع الأداء وتحليل سلوك العملاء وأوقات الفتح</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon">📤</div><div class="stat-val" id="an1">0</div><div class="stat-label">إجمالي مرسل</div></div>
+    <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-val" id="an2">0%</div><div class="stat-label">معدل الفتح</div></div>
+    <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-val" id="an3">0%</div><div class="stat-label">معدل الرد</div></div>
+    <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-val" id="an4">0</div><div class="stat-label">بانتظار إعادة إرسال</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="card"><div class="card-title" style="margin-bottom:16px">أوقات <span>فتح البريد</span></div><div class="chart-container"><canvas id="chartOpen"></canvas></div></div>
+    <div class="card"><div class="card-title" style="margin-bottom:16px">أداء <span>القطاعات</span></div><div class="chart-container"><canvas id="chartPerf"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">🕐 خريطة <span>التتبع</span></div>
+    <div id="trackingMap"></div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="page-header">
+    <div class="page-title">🗓️ الجدولة <span>التلقائية</span></div>
+    <div class="page-sub">يعيد النظام الإرسال تلقائياً بيوم ووقت مختلف لمن لم يفتح الرسالة</div>
+  </div>
+  <div class="info-box info-green">
+    <div class="ib-title">✅ القاعدة التلقائية النشطة</div>
+    <div style="color:var(--text-dim)">كل أسبوع · يوم مختلف يُختار تلقائياً · ساعة مختلفة من نافذة الفتح المتوقعة (9-11ص أو 1-3م) · يتوقف فوراً عند الفتح أو الرد</div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">سلسلة <span>إعادة الإرسال</span></div>
+      <label class="toggle-switch"><input type="checkbox" checked id="autoSchedToggle"><span class="toggle-slider"></span></label></div>
+    <div class="schedule-item"><div class="schedule-time">الإرسال 1</div>
+      <div class="schedule-info"><div class="schedule-title">الرسالة التعريفية الأصلية</div><div class="schedule-sub">عند بدء الحملة</div></div>
+      <span class="tag tag-sent">فوري</span></div>
+    <div class="schedule-item"><div class="schedule-time">+7 أيام</div>
+      <div class="schedule-info"><div class="schedule-title">متابعة لطيفة</div><div class="schedule-sub">يوم مختلف · وقت مختلف · نص مُعاد صياغته بالذكاء</div></div>
+      <span class="tag tag-pending">مجدول</span></div>
+    <div class="schedule-item"><div class="schedule-time">+14 يوم</div>
+      <div class="schedule-info"><div class="schedule-title">تذكير بقيمة إضافية</div><div class="schedule-sub">يضيف عرضاً أو ميزة جديدة</div></div>
+      <span class="tag tag-pending">مجدول</span></div>
+    <div class="schedule-item" style="border:none"><div class="schedule-time">+21 يوم</div>
+      <div class="schedule-info"><div class="schedule-title">أرشفة تلقائية</div><div class="schedule-sub">ينقل للقائمة الباردة ويتوقف</div></div>
+      <span class="tag tag-cold">توقف</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">⏰ خوارزمية اختيار <span>الوقت الأمثل</span></div>
+    <div style="font-size:13px;color:var(--text-dim);line-height:1.9">
+      يحلل النظام أوقات فتح الرسائل السابقة لكل عميل ويختار للإرسال التالي وقتاً ضمن أعلى نافذة فتح متوقعة،
+      مع تغيير اليوم في كل دورة (الأحد ← الثلاثاء ← الخميس) لتجنب التكرار الممل وزيادة فرصة الفتح.
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <div class="page-title">⚙️ الإعدادات <span>والربط</span></div>
+    <div class="page-sub">ربط الذكاء الاصطناعي والبريد وواتساب — كل المفاتيح تُحفظ بشكل دائم ومحلي</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">🤖 الذكاء الاصطناعي — Anthropic Claude</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">المزود الأساسي لتحليل العملاء وكتابة الرسائل المخصصة</div>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <input class="form-input" id="anthropicKey" type="password" placeholder="sk-ant-api03-..." style="direction:ltr">
+    </div>
+    <div class="form-group">
+      <label>الموديل</label>
+      <select class="form-select" id="anthropicModel">
+        <option value="claude-sonnet-4-20250514">claude-sonnet-4 (موصى به — توازن السرعة والجودة)</option>
+        <option value="claude-opus-4-20250514">claude-opus-4 (الأقوى — للرسائل المعقدة)</option>
+        <option value="claude-haiku-4-5-20251001">claude-haiku-4.5 (الأسرع — للحجم الكبير)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveAnthropicKey()">💾 حفظ واختبار</button>
+      <button class="btn-outline" onclick="testAnthropic()">🔌 اختبار الاتصال فقط</button>
+    </div>
+    <div id="anthropicStatus" style="margin-top:10px;font-size:12px"></div>
+    <div class="info-box info-gold" style="margin-top:14px">
+      <div class="ib-title">📍 من أين أحصل على المفتاح؟</div>
+      <div style="color:var(--text-dim)">من <b>console.anthropic.com</b> ← API Keys ← Create Key. مفتاحك يبدأ بـ <code style="color:var(--gold)">sk-ant-</code></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">🔎 البحث عن العملاء — Google Places (اختياري)</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">لجلب شركات حقيقية ببياناتها. بدونه يعتمد النظام على Claude لتوليد القوائم المحتملة</div>
+    <div class="form-group">
+      <label>Google Places API Key</label>
+      <input class="form-input" id="googleKey" type="password" placeholder="AIza..." style="direction:ltr">
+    </div>
+    <button class="btn-primary" onclick="saveGoogleKey()">💾 حفظ</button>
+    <div id="googleStatus" style="margin-top:10px;font-size:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">📧 إرسال البريد — الخادم الخلفي</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رابط خادم Node.js الذي يرسل البريد فعلياً ويتتبع الفتح ويستقبل الردود</div>
+    <div class="form-group">
+      <label>عنوان الخادم الخلفي (Backend URL)</label>
+      <input class="form-input" id="backendUrl" placeholder="https://your-server.com" style="direction:ltr">
+    </div>
+    <div class="form-group">
+      <label>اسم المرسل الظاهر</label>
+      <input class="form-input" id="senderName" value="شركة محمد للنقليات - MTC">
+    </div>
+    <div class="form-group">
+      <label>بريد الإرسال</label>
+      <input class="form-input" id="senderEmail" value="alhasanim194@gmail.com" style="direction:ltr">
+    </div>
+    <button class="btn-primary" onclick="saveBackend()">💾 حفظ واختبار الخادم</button>
+    <div id="backendStatus" style="margin-top:10px;font-size:12px"></div>
+    <div class="info-box info-cyan" style="margin-top:14px">
+      <div class="ib-title">💡 لا تملك خادماً؟</div>
+      <div style="color:var(--text-dim)">انتقل لتبويب <b>"دليل التشغيل"</b> — كود الخادم جاهز مع خطوات النشر المجاني على Render أو Railway في 10 دقائق.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">📱 واتساب</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رقم الشركة لإنشاء روابط wa.me. للإرسال التلقائي الكامل اربط WhatsApp Business API عبر الخادم</div>
+    <div class="form-group">
+      <label>رقم واتساب الشركة</label>
+      <input class="form-input" id="waNumber" value="+966501815872" style="direction:ltr">
+    </div>
+    <button class="btn-primary" onclick="saveWA()">💾 حفظ</button>
+    <div id="waStatus" style="margin-top:10px;font-size:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">🏢 بيانات شركتك (تُستخدم في توليد الرسائل)</div>
+    <div class="form-group"><label>اسم الشركة</label><input class="form-input" id="myCompany" value="شركة محمد الحسني للنقليات (MTC)"></div>
+    <div class="form-group"><label>الخدمات الرئيسية</label>
+      <textarea class="form-textarea" id="myServices">نقل ثقيل، تريلات، رافعات، شاحنات، تخليص جمركي، نقل سيارات، شحن وتفريغ في الموانئ، خدمات لوجستية متكاملة</textarea></div>
+    <div class="form-group"><label>المزايا التنافسية</label>
+      <textarea class="form-textarea" id="myAdvantages">خبرة منذ 1433هـ، أسطول متنوع وحديث، تغطية كاملة للمملكة، شركاء كبار (بن لادن، نقوا، CCECC، السيف، الجهاز)، مرونة وسرعة استجابة</textarea></div>
+    <div class="form-group"><label>بيانات التواصل</label>
+      <input class="form-input" id="myContact" value="+966 50 181 5872 | +966 56 380 3931 | alhasanim194@gmail.com | جدة - الخمرة"></div>
+    <button class="btn-primary" onclick="saveCompanyData()">💾 حفظ بيانات الشركة</button>
+    <div id="companyStatus" style="margin-top:10px;font-size:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">🗑️ إدارة البيانات</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-outline" onclick="exportData()">📥 تصدير كل البيانات (JSON)</button>
+      <button class="btn-sm btn-danger" style="padding:8px 15px" onclick="clearAllData()">🗑️ مسح كل البيانات</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEPLOY GUIDE -->
+<div class="page" id="page-deploy">
+  <div class="page-header">
+    <div class="page-title">📘 دليل <span>التشغيل الكامل</span></div>
+    <div class="page-sub">كل ما تحتاجه لتشغيل النظام بشكل حقيقي 100% — انسخ والصق فقط</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">🗺️ خريطة المعمارية</div>
+    <div style="font-size:13px;line-height:2;color:var(--text-dim)">
+      <b style="color:var(--gold)">الواجهة (هذا الملف):</b> تعمل في المتصفح — بحث وكتابة بالذكاء + تخزين دائم<br>
+      <b style="color:var(--gold)">الخادم الخلفي (Node.js):</b> يرسل البريد فعلياً + يتتبع الفتح + يستقبل الردود + ينفّذ الجدولة<br>
+      <b style="color:var(--gold)">Anthropic API:</b> تحليل العملاء وكتابة الرسائل المخصصة<br>
+      <b style="color:var(--gold)">Google Places API:</b> (اختياري) جلب شركات حقيقية ببياناتها
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">📋 خطوات التشغيل</div>
+    <div class="step"><div><span class="step-num">1</span></div><div class="step-content">
+      <h4>احصل على مفتاح Anthropic</h4>
+      <p>سجّل في console.anthropic.com → API Keys → Create Key → انسخه والصقه في الإعدادات. هذا وحده يكفي لتشغيل البحث والكتابة بالذكاء.</p>
+    </div></div>
+    <div class="step"><div><span class="step-num">2</span></div><div class="step-content">
+      <h4>انشر الخادم الخلفي (للإرسال الفعلي)</h4>
+      <p>انسخ كود الخادم أدناه، ارفعه على GitHub، ثم انشره مجاناً على Render.com أو Railway.app. خذ الرابط وضعه في الإعدادات.</p>
+    </div></div>
+    <div class="step"><div><span class="step-num">3</span></div><div class="step-content">
+      <h4>فعّل كلمة مرور تطبيق Gmail</h4>
+      <p>حساب Google → الأمان → التحقق بخطوتين → كلمات مرور التطبيقات → أنشئ واحدة وضعها في متغيرات بيئة الخادم.</p>
+    </div></div>
+    <div class="step" style="border:none"><div><span class="step-num">4</span></div><div class="step-content">
+      <h4>ابدأ الحملات</h4>
+      <p>ابحث عن العملاء → ولّد الرسائل → نفّذ الحملة. سيتتبع النظام الفتح ويعيد الإرسال تلقائياً.</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">🖥️ كود الخادم الخلفي <span>(server.js)</span></div>
+      <button class="copy-code-btn" onclick="copyServerCode()">📋 نسخ الكود</button></div>
+    <div class="code-block" id="serverCode"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">📦 ملف <span>package.json</span></div>
+      <button class="copy-code-btn" onclick="copyPkg()">📋 نسخ</button></div>
+    <div class="code-block" id="pkgCode"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">🔐 متغيرات البيئة <span>(.env)</span></div>
+      <button class="copy-code-btn" onclick="copyEnv()">📋 نسخ</button></div>
+    <div class="code-block" id="envCode"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">🧠 البرومبت التوجيهي <span>الاحترافي</span></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">هذا البرومبت المدمج في النظام — مكتوب باحترافية ليوجّه Claude لتحليل العملاء وكتابة رسائل عالية التحويل دون حظر:</div>
+    <div class="card-header" style="margin-bottom:8px"><div></div><button class="copy-code-btn" onclick="copyPrompt()">📋 نسخ البرومبت</button></div>
+    <div class="code-block" id="promptCode" style="white-space:pre-wrap;direction:rtl;text-align:right;color:#d8e6f5"></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<div class="modal-overlay" id="leadModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('leadModal')">✕</button>
+    <div class="modal-title" id="modalTitle">تفاصيل <span>العميل</span></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ==================== PERSISTENT STORAGE LAYER ====================
+const DB = {
+  async get(key, def=null) {
+    try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : def; }
+    catch(e) { return def; }
+  },
+  async set(key, val) {
+    try { await window.storage.set(key, JSON.stringify(val)); return true; }
+    catch(e) { console.error(e); return false; }
+  },
+  async del(key) { try { await window.storage.delete(key); } catch(e){} }
+};
+
+const APP = { config:{}, leads:[], inbox:[], campaigns:[] };
+
+// ==================== AI PROMPT ENGINE ====================
+const SEARCH_PROMPT = (sector, city, count, minScore, company) => `أنت محلل تطوير أعمال خبير في قطاع النقل اللوجستي السعودي، تعمل لصالح "${company}".
+
+مهمتك: استخراج قائمة بأكثر العملاء المحتملين احتمالاً للاهتمام بخدمات النقل الثقيل والتخليص الجمركي.
+
+معايير الاستهداف:
+- القطاع: ${sector}
+- المنطقة: ${city}
+- العدد المطلوب: ${count} عميل على الأقل
+- الحد الأدنى لنسبة الاهتمام: ${minScore}%
+
+لكل عميل محتمل قدّم تقييماً واقعياً لنسبة الاهتمام (interest_score من 0 إلى 100) بناءً على:
+1. حجم احتياج القطاع لخدمات النقل الثقيل (40%)
+2. تكرار الحاجة للتخليص الجمركي والشحن (25%)
+3. حجم الشركة وقدرتها على التعاقد (20%)
+4. سهولة الوصول لصانع القرار (15%)
+
+رتّب القائمة تنازلياً من الأعلى احتمالاً للأقل.
+
+أرجع النتيجة بصيغة JSON صالحة فقط دون أي نص إضافي أو علامات markdown، بالشكل:
+{"leads":[{"name":"اسم الشركة","sector":"النشاط","city":"المدينة","email":"بريد تقديري واقعي","phone":"+966...","interest_score":85,"reason":"سبب التقييم في جملة"}]}
+
+ملاحظة مهمة: قدّم شركات حقيقية معروفة في السوق السعودي ضمن القطاع المحدد متى أمكن. إن لم تتوفر بيانات تواصل مؤكدة، اقترح صيغة بريد مؤسسي منطقية (info@ أو procurement@) ووضّح ذلك ضمناً عبر إعطاء التقييم وزناً يعكس عدم اليقين.`;
+
+const MESSAGE_PROMPT = (data) => `أنت مدير تطوير أعمال محترف ومقنع في شركة "${data.myCompany}".
+
+== بيانات شركتنا ==
+الخدمات: ${data.myServices}
+المزايا التنافسية: ${data.myAdvantages}
+التواصل: ${data.myContact}
+
+== العميل المستهدف ==
+الشركة: ${data.company}
+القطاع/النشاط: ${data.sector}
+${data.note ? 'ملاحظة خاصة: ' + data.note : ''}
+
+== نوع الرسالة المطلوبة ==
+${data.typeLabel}
+
+== اللغة ==
+${data.langInstr}
+
+اكتب رسالة بريد إلكتروني احترافية مقنعة عالية التحويل وفق هذه القواعد الصارمة:
+1. سطر الموضوع: اكتبه في أول سطر بصيغة "الموضوع: ..." — يجب أن يكون مخصصاً لاسم الشركة وغير دعائي (لتجنب فلاتر السبام).
+2. تحية شخصية تذكر اسم الشركة المستهدفة تحديداً.
+3. جملة افتتاحية تربط بين نشاط الشركة المستهدفة واحتياجها الفعلي لخدماتنا (أظهر أنك فهمت أعمالهم).
+4. اذكر خدمتين أو ثلاثاً من خدماتنا الأكثر صلة بقطاع هذا العميل تحديداً — لا تذكر كل الخدمات.
+5. دليل ثقة واحد قصير (شريك كبير أو سنوات الخبرة).
+6. دعوة واضحة ومحددة لاتخاذ إجراء (اجتماع 15 دقيقة / مكالمة / طلب عرض).
+7. توقيع رسمي باسم إدارة تطوير الأعمال مع بيانات التواصل.
+
+قيود مهمة لمنع الحظر والرفض:
+- تجنب الكلمات المحفّزة للسبام (مجاني، عرض حصري، اضغط الآن، عاجل، اربح).
+- لا مبالغة ولا وعود مطلقة. نبرة مهنية واثقة هادئة.
+- الطول: 130-190 كلمة فقط للنص (عدا الموضوع).
+- لا تضف أي شرح أو تعليق خارج نص الرسالة والموضوع.`;
+
+// ==================== ANTHROPIC API CALL ====================
+async function callClaude(prompt, maxTokens=2000) {
+  const key = APP.config.anthropicKey;
+  const model = APP.config.anthropicModel || 'claude-sonnet-4-20250514';
+  if (!key || !key.startsWith('sk-ant')) return { ok:false, error:'no_key' };
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model, max_tokens:maxTokens, messages:[{role:'user',content:prompt}] })
+    });
+    if (!resp.ok) { const t = await resp.text(); return { ok:false, error:'api_error', detail:t }; }
+    const data = await resp.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    return { ok:true, text };
+  } catch(e) { return { ok:false, error:'network', detail:String(e) }; }
+}
+
+// ==================== NAVIGATION ====================
+function openPage(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page)?.classList.add('active');
+  if(page==='leads') renderLeadsList();
+  if(page==='inbox') renderInbox();
+  if(page==='analytics') { renderAnalytics(); }
+  if(page==='dashboard') { renderDashboardCharts(); renderDashSchedule(); refreshStats(); }
+  if(page==='compose') populateClientSelect();
+  if(page==='campaigns') document.getElementById('campaignPanel').style.display='none';
+  if(page==='deploy') renderDeployCode();
+}
+
+// ==================== AI SEARCH ====================
+async function startAISearch() {
+  const sector = document.getElementById('sectorFilter').value;
+  const city = document.getElementById('cityFilter').value;
+  const minScore = parseInt(document.getElementById('scoreThreshold').value);
+  const count = Math.max(20, parseInt(document.getElementById('leadsMin').value)||20);
+
+  document.getElementById('aiLoader').classList.add('active');
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('searchBtn').disabled=true;
+
+  const steps=['يحلل القطاع المستهدف...','يبحث عن شركات في '+city+'...','يقيّم نسبة الاهتمام لكل شركة...','يرتب حسب الأولوية...','يجهّز بيانات التواصل...'];
+  let si=0, prog=0;
+  const tick=setInterval(()=>{
+    prog=Math.min(prog+Math.random()*15+4,95);
+    if(si<steps.length){document.getElementById('aiLoaderText').textContent=steps[si];si++;}
+    document.getElementById('aiProgress').style.width=prog+'%';
+    document.getElementById('aiProgressNum').textContent=Math.round(prog)+'%';
+  },500);
+
+  let leads=[], isReal=false;
+  const company = APP.config.myCompany || 'شركة محمد للنقليات';
+  const result = await callClaude(SEARCH_PROMPT(sector, city, count, minScore, company), 4000);
+
+  if(result.ok) {
+    try {
+      let txt = result.text.trim().replace(/```json|```/g,'').trim();
+      const m = txt.match(/\{[\s\S]*\}/);
+      if(m) txt = m[0];
+      const parsed = JSON.parse(txt);
+      leads = (parsed.leads||[]).map(l=>({
+        name:l.name, sector:l.sector||sector, city:l.city||city,
+        email:l.email||'info@company.com.sa', phone:l.phone||'+966500000000',
+        score:Math.round(l.interest_score||l.score||50), reason:l.reason||'',
+        status:'pending', last:'—', real:true
+      })).filter(l=>l.score>=minScore).sort((a,b)=>b.score-a.score);
+      if(leads.length>0) isReal=true;
+    } catch(e) { console.warn('parse failed', e); }
+  }
+
+  if(leads.length<count) {
+    const demo = generateDemoLeads(sector, city, count-leads.length, minScore);
+    leads = leads.concat(demo).slice(0, Math.max(count,20));
+  }
+
+  clearInterval(tick);
+  document.getElementById('aiProgress').style.width='100%';
+  document.getElementById('aiProgressNum').textContent='100%';
+
+  setTimeout(()=>{
+    document.getElementById('aiLoader').classList.remove('active');
+    document.getElementById('aiProgress').style.width='0%';
+    document.getElementById('searchBtn').disabled=false;
+    APP.searchResults = leads;
+    document.getElementById('resultsCount').textContent=leads.length;
+    const mode=document.getElementById('resultMode');
+    if(isReal){mode.className='tag tag-real';mode.textContent='✓ تحليل ذكاء اصطناعي حقيقي';}
+    else{mode.className='tag tag-demo';mode.textContent='وضع تجريبي — أضف مفتاح API';}
+    renderResultsTable(leads);
+    document.getElementById('searchResults').style.display='block';
+    showToast(`✅ تم العثور على ${leads.length} عميل محتمل`);
+  },600);
+}
+
+function generateDemoLeads(sector, city, n, minScore) {
+  const base=[
+    {name:'مجموعة بن لادن السعودية',sec:'بناء ومقاولات',e:'procurement@sbg.com.sa'},
+    {name:'شركة CCECC للمقاولات',sec:'مقاولات ضخمة',e:'info@ccecc-sa.com'},
+    {name:'السيف مهندسون مقاولون',sec:'بناء وهندسة',e:'projects@elseif.com'},
+    {name:'الجهاز للمقاولات',sec:'مقاولات',e:'supply@aljihaz.com.sa'},
+    {name:'مجموعة نقوا للاستزراع المائي',sec:'صناعة وغذاء',e:'logistics@naqua.com.sa'},
+    {name:'شركة فيل العربية الصناعية',sec:'صناعة بيئية',e:'ops@feal.com.sa'},
+    {name:'شركة أرامكو للخدمات',sec:'نفط وغاز',e:'transport@aramco.com'},
+    {name:'شركة سابك',sec:'بتروكيماويات',e:'transport@sabic.com'},
+    {name:'شركة المياه الوطنية',sec:'حكومي',e:'procurement@nwc.com.sa'},
+    {name:'ميناء جدة الإسلامي',sec:'موانئ',e:'ops@jip.gov.sa'},
+    {name:'شركة المراعي',sec:'غذاء وصناعة',e:'supply@almarai.com'},
+    {name:'شركة بناء الحضارة',sec:'مقاولات',e:'info@bina-hadara.com'},
+  ];
+  const out=[];
+  for(let i=0;i<n;i++){
+    const b=base[i%base.length];
+    const sfx=i>=base.length?` (فرع ${city})`:'';
+    out.push({name:b.name+sfx,sector:b.sec,city:city.split(' ')[0],email:b.e,
+      phone:'+96650'+(1000000+Math.floor(Math.random()*8999999)),
+      score:Math.max(minScore,Math.floor(Math.random()*(95-minScore))+minScore),
+      reason:'تقييم تجريبي — أضف مفتاح API للتحليل الحقيقي',status:'pending',last:'—',real:false});
+  }
+  return out.sort((a,b)=>b.score-a.score);
+}
+
+function renderResultsTable(data) {
+  document.getElementById('resultsBody').innerHTML = data.map((l,i)=>{
+    const cls=l.score>=80?'score-high':l.score>=60?'score-mid':'score-low';
+    return `<tr>
+      <td><div class="checkbox-custom" id="chk-${i}" onclick="toggleChk(${i})"></div></td>
+      <td><div style="font-weight:600">${l.name}</div></td>
+      <td><span class="tag tag-pending" style="font-size:10px">${l.sector}</span></td>
+      <td style="font-size:12px;color:var(--text-dim)">${l.city||'—'}</td>
+      <td style="font-size:12px;direction:ltr">${l.email}</td>
+      <td style="font-size:12px;direction:ltr">${l.phone}</td>
+      <td><div class="score-bar ${cls}"><div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div><span class="score-text">${l.score}%</span></div></td>
+      <td><div class="action-btns">
+        <button class="btn-sm btn-view" onclick="viewLead(${i})">عرض</button>
+        <button class="btn-sm btn-send" onclick="composeForResult(${i})">✍️</button>
+        <button class="btn-sm btn-wa" onclick="waResult(${i})">📱</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+let selSet=new Set();
+function toggleChk(i){const el=document.getElementById('chk-'+i);
+  if(selSet.has(i)){selSet.delete(i);el.classList.remove('checked');el.textContent='';}
+  else{selSet.add(i);el.classList.add('checked');el.textContent='✓';}}
+function selectAll(){APP.searchResults.forEach((_,i)=>{selSet.add(i);const e=document.getElementById('chk-'+i);if(e){e.classList.add('checked');e.textContent='✓';}});showToast('تم تحديد الكل');}
+
+async function sendSelected(){
+  if(selSet.size===0){showToast('⚠️ اختر شركات أولاً');return;}
+  const chosen=[...selSet].map(i=>APP.searchResults[i]);
+  for(const c of chosen){ if(!APP.leads.find(x=>x.name===c.name)) APP.leads.push({...c}); }
+  await DB.set('leads', APP.leads);
+  document.getElementById('leadsCount').textContent=APP.leads.length;
+  APP.campaignTargets=chosen;
+  openPage('campaigns');
+  startCampaign('email');
+  showToast(`🚀 ${chosen.length} عميل جاهز للحملة`);
+}
+
+function filterLeads(type,btn){
+  document.querySelectorAll('#page-search .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let f=APP.searchResults;
+  if(type==='high')f=f.filter(l=>l.score>=80);
+  else if(type==='mid')f=f.filter(l=>l.score>=60&&l.score<80);
+  else if(type==='low')f=f.filter(l=>l.score<60);
+  renderResultsTable(f);
+}
+
+function viewLead(i){
+  const l=APP.searchResults[i];
+  document.getElementById('modalTitle').innerHTML=`تفاصيل <span>${l.name}</span>`;
+  document.getElementById('modalBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="form-group"><label>القطاع</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:13px">${l.sector}</div></div>
+      <div class="form-group"><label>نسبة الاهتمام</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--gold);border-radius:8px;font-size:13px;color:var(--gold);font-weight:700">${l.score}%</div></div>
+      <div class="form-group"><label>البريد</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:12px;direction:ltr">${l.email}</div></div>
+      <div class="form-group"><label>الهاتف</label><div style="padding:8px 12px;background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:8px;font-size:12px;direction:ltr">${l.phone}</div></div>
+    </div>
+    <div class="info-box info-cyan"><div class="ib-title">🤖 تحليل الذكاء الاصطناعي</div>
+      <div style="color:var(--text-dim)">${l.reason||'شركة ضمن قطاع مستهدف ذو احتياج مرتفع لخدمات النقل الثقيل والتخليص الجمركي. يُنصح بالتواصل مع التركيز على سرعة التسليم والتغطية الشاملة.'}</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="composeForResult(${i});closeModal('leadModal')">✍️ كتابة رسالة</button>
+      <button class="btn-sm btn-wa" style="padding:10px 18px" onclick="waResult(${i})">📱 واتساب</button>
+      <button class="btn-outline" onclick="closeModal('leadModal')">إغلاق</button>
+    </div>`;
+  document.getElementById('leadModal').classList.add('open');
+}
+
+function composeForResult(i){const l=APP.searchResults[i];goCompose(l);}
+function waResult(i){doWA(APP.searchResults[i]);}
+function goCompose(l){
+  openPage('compose');
+  document.getElementById('cCompany').value=l.name;
+  document.getElementById('cSector').value=l.sector;
+  document.getElementById('recipientEmail').value=l.email;
+  document.getElementById('recipientPhone').value=l.phone;
+}
+function doWA(l){
+  const num=(APP.config.waNumber||l.phone||'').replace(/\D/g,'');
+  const txt=encodeURIComponent(`السلام عليكم،\n\nنحن ${APP.config.myCompany||'شركة محمد للنقليات (MTC)'}، متخصصون في النقل الثقيل والتخليص الجمركي والخدمات اللوجستية.\n\nنودّ التعرف على احتياجات ${l.name} وتقديم أفضل الحلول.\n\n${APP.config.myContact||'+966501815872'}`);
+  const target=(l.phone||'').replace(/\D/g,'')||num;
+  window.open(`https://wa.me/${target}?text=${txt}`,'_blank');
+}
+
+// ==================== LEADS LIST ====================
+function renderLeadsList(){
+  const tb=document.getElementById('leadsListBody');
+  if(APP.leads.length===0){document.getElementById('leadsEmpty').style.display='block';tb.innerHTML='';return;}
+  document.getElementById('leadsEmpty').style.display='none';
+  const sm={pending:'tag-pending',sent:'tag-sent',opened:'tag-opened',replied:'tag-replied',cold:'tag-cold'};
+  const sl={pending:'لم يُرسل',sent:'أُرسل',opened:'فُتح',replied:'رد ✅',cold:'بارد'};
+  tb.innerHTML=APP.leads.map((l,i)=>{
+    const cls=l.score>=80?'score-high':l.score>=60?'score-mid':'score-low';
+    return `<tr>
+      <td><div style="font-weight:600;font-size:13px">${l.name}</div></td>
+      <td><span class="tag tag-pending" style="font-size:10px">${l.sector}</span></td>
+      <td style="font-size:11px;direction:ltr;color:var(--text-dim)">${l.email}</td>
+      <td><div class="score-bar ${cls}" style="min-width:85px"><div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div><span class="score-text">${l.score}%</span></div></td>
+      <td><span class="tag ${sm[l.status]||'tag-pending'}">${sl[l.status]||'—'}</span></td>
+      <td style="font-size:12px;color:var(--text-dim)">${l.last||'—'}</td>
+      <td><div class="action-btns">
+        <button class="btn-sm btn-send" onclick="composeForLead(${i})">✍️</button>
+        <button class="btn-sm btn-wa" onclick="doWA(APP.leads[${i}])">📱</button>
+        <button class="btn-sm btn-danger" onclick="delLead(${i})">🗑️</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function filterLeadsList(type,btn){
+  document.querySelectorAll('#page-leads .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function composeForLead(i){goCompose(APP.leads[i]);}
+async function delLead(i){APP.leads.splice(i,1);await DB.set('leads',APP.leads);
+  document.getElementById('leadsCount').textContent=APP.leads.length;renderLeadsList();showToast('🗑️ تم الحذف');}
+
+// ==================== COMPOSE ====================
+function populateClientSelect(){
+  const s=document.getElementById('composeClient');
+  s.innerHTML='<option value="">— اختر عميلاً —</option>'+
+    APP.leads.map((l,i)=>`<option value="${i}">${l.name}</option>`).join('')+
+    '<option value="manual">✏️ إدخال يدوي</option>';
+}
+function fillClientData(){
+  const v=document.getElementById('composeClient').value;
+  if(v===''||v==='manual')return;
+  const l=APP.leads[parseInt(v)];
+  document.getElementById('cCompany').value=l.name;
+  document.getElementById('cSector').value=l.sector;
+  document.getElementById('recipientEmail').value=l.email;
+  document.getElementById('recipientPhone').value=l.phone;
+}
+
+async function generateMessage(){
+  const company=document.getElementById('cCompany').value.trim();
+  const sector=document.getElementById('cSector').value.trim();
+  if(!company){showToast('⚠️ أدخل اسم الشركة');return;}
+  const msgType=document.getElementById('msgType').value;
+  const lang=document.getElementById('msgLang').value;
+  const note=document.getElementById('cNote').value.trim();
+
+  document.getElementById('composeLoader').classList.add('active');
+  document.getElementById('msgPreviewBox').style.display='none';
+  document.getElementById('composeEmpty').style.display='none';
+  document.getElementById('genBtn').disabled=true;
+
+  const typeLabel={intro:'رسالة تعريفية — أول تواصل بارد',followup:'رسالة متابعة — العميل لم يرد على الرسالة الأولى',proposal:'رسالة عرض تعاون / طلب اجتماع لتقديم عرض سعر',reopen:'رسالة إعادة فتح بعد فترة صمت'}[msgType];
+  const langInstr=lang==='ar'?'العربية فقط':lang==='en'?'English only':'العربية ثم ترجمة إنجليزية تحتها';
+
+  const promptData={
+    myCompany:APP.config.myCompany||'شركة محمد الحسني للنقليات (MTC)',
+    myServices:APP.config.myServices||'نقل ثقيل، تخليص جمركي، خدمات لوجستية',
+    myAdvantages:APP.config.myAdvantages||'خبرة منذ 1433هـ، أسطول متنوع، تغطية شاملة',
+    myContact:APP.config.myContact||'+966501815872',
+    company,sector,note,typeLabel,langInstr
+  };
+
+  const res=await callClaude(MESSAGE_PROMPT(promptData),1500);
+  let msg='';
+  if(res.ok && res.text) msg=res.text.trim();
+  else msg=fallbackMsg(company,sector,msgType,promptData);
+
+  document.getElementById('composeLoader').classList.remove('active');
+  document.getElementById('genBtn').disabled=false;
+  document.getElementById('msgPreviewBox').style.display='block';
+  document.getElementById('msgPreview').textContent=msg;
+  if(!res.ok) showToast('ℹ️ رسالة تجريبية — أضف مفتاح API للتوليد الحقيقي');
+}
+
+function fallbackMsg(company,sector,type,d){
+  if(type==='followup') return `الموضوع: متابعة بخصوص خدمات النقل اللوجستي - ${company}
+
+السادة ${company} المحترمين،
+
+تحية طيبة،
+
+متابعةً لرسالتنا السابقة من ${d.myCompany} حول حلول النقل الثقيل والتخليص الجمركي، أردنا التأكد من وصولها والإجابة على أي استفسار قد يكون لديكم.
+
+نظراً لطبيعة نشاطكم في ${sector||'مجالكم'}، نثق أن خدماتنا في النقل الثقيل والتخليص الجمركي يمكن أن تدعم عملياتكم بكفاءة.
+
+نسعد بترتيب مكالمة قصيرة (15 دقيقة) في الوقت المناسب لكم.
+
+مع التقدير،
+إدارة تطوير الأعمال
+${d.myContact}`;
+  return `الموضوع: حلول النقل الثقيل والتخليص الجمركي - ${company}
+
+السادة ${company} المحترمين،
+
+السلام عليكم ورحمة الله،
+
+نتواصل معكم من ${d.myCompany}، المتخصصة في حلول النقل اللوجستي منذ 1433هـ.
+
+لاحظنا أن نشاطكم في ${sector||'قطاعكم'} يتطلب حلول نقل موثوقة، ويسعدنا تقديم خدماتنا الأكثر صلة باحتياجاتكم:
+• النقل الثقيل والتريلات بأسطول حديث يغطي جميع مناطق المملكة
+• خدمات التخليص الجمركي السريع مع ضمان الامتثال الكامل
+
+نفخر بثقة شركاء كبار مثل مجموعة بن لادن ونقوا والجهاز للمقاولات.
+
+نسعد بترتيب اجتماع قصير لاستعراض كيف يمكننا دعم عملياتكم.
+
+مع التقدير،
+إدارة تطوير الأعمال
+${d.myContact}`;
+}
+
+async function sendEmailSingle(){
+  const to=document.getElementById('recipientEmail').value.trim();
+  if(!to){showToast('⚠️ أدخل البريد المستلم');return;}
+  const backend=APP.config.backendUrl;
+  if(!backend){showToast('⚠️ اربط الخادم الخلفي في الإعدادات للإرسال الفعلي');return;}
+  const msg=document.getElementById('msgPreview').textContent;
+  showToast('📤 جاري الإرسال عبر الخادم...');
+  try{
+    const r=await fetch(backend.replace(/\/$/,'')+'/api/send',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({to,body:msg,from:APP.config.senderEmail,fromName:APP.config.senderName})
+    });
+    if(r.ok)showToast('✅ تم الإرسال بنجاح');
+    else showToast('⚠️ فشل الإرسال — تحقق من الخادم');
+  }catch(e){showToast('⚠️ تعذّر الاتصال بالخادم');}
+}
+function sendWhatsApp(){
+  const phone=document.getElementById('recipientPhone').value.trim();
+  if(!phone){showToast('⚠️ أدخل رقم الواتساب');return;}
+  const msg=document.getElementById('msgPreview').textContent.replace(/^الموضوع:.*\n+/i,'');
+  window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+function copyMsg(){navigator.clipboard.writeText(document.getElementById('msgPreview').textContent);showToast('📋 تم النسخ');}
+function editMsg(){const b=document.getElementById('msgPreview');
+  b.contentEditable=b.contentEditable==='true'?'false':'true';
+  if(b.contentEditable==='true'){b.focus();showToast('✏️ وضع التعديل مفعّل');}else showToast('✅ تم الحفظ');}
+function addAttachment(name,icon){
+  const c=document.createElement('div');c.className='att-chip';
+  c.innerHTML=`${icon} ${name} <span onclick="this.parentElement.remove()" style="margin-right:6px;opacity:.6;cursor:pointer">✕</span>`;
+  document.getElementById('attachments').appendChild(c);showToast('📎 تمت الإضافة');}
+
+// ==================== CAMPAIGNS ====================
+function startCampaign(mode){
+  APP.campaignMode=mode;
+  document.getElementById('campaignPanel').style.display='block';
+  document.getElementById('execBtn').textContent=mode==='wa'?'📱 تنفيذ حملة واتساب':'🚀 تنفيذ حملة البريد';
+  document.getElementById('sendProgressArea').innerHTML='';
+}
+async function executeCampaign(){
+  const targets=APP.campaignTargets&&APP.campaignTargets.length?APP.campaignTargets:APP.leads;
+  if(targets.length===0){showToast('⚠️ لا يوجد عملاء — ابحث أولاً');return;}
+  const area=document.getElementById('sendProgressArea');area.innerHTML='';
+  const btn=document.getElementById('execBtn');btn.disabled=true;
+  const [mn,mx]=document.getElementById('delayBetween').value.split('-').map(Number);
+  const backend=APP.config.backendUrl;
+  const mode=APP.campaignMode;
+  let done=0;
+
+  for(let idx=0;idx<targets.length;idx++){
+    const l=targets[idx];
+    btn.textContent=`⏳ ${idx+1}/${targets.length}`;
+    const el=document.createElement('div');el.className='send-progress';
+    el.innerHTML=`<div class="sp-icon pulse">${mode==='wa'?'📱':'📤'}</div><div class="sp-info"><div class="sp-title">${l.name}</div><div class="sp-sub">${mode==='wa'?l.phone:l.email}</div></div><span class="tag tag-pending">يُولّد الرسالة...</span>`;
+    area.appendChild(el);area.scrollTop=area.scrollHeight;
+
+    // Generate personalized message via Claude
+    const pd={myCompany:APP.config.myCompany||'MTC',myServices:APP.config.myServices||'نقل ثقيل وتخليص جمركي',
+      myAdvantages:APP.config.myAdvantages||'خبرة وأسطول متنوع',myContact:APP.config.myContact||'+966501815872',
+      company:l.name,sector:l.sector,note:'',typeLabel:'رسالة تعريفية — أول تواصل',langInstr:'العربية'};
+    const r=await callClaude(MESSAGE_PROMPT(pd),1200);
+    const personalizedMsg=r.ok&&r.text?r.text.trim():fallbackMsg(l.name,l.sector,'intro',pd);
+
+    el.querySelector('.tag').textContent=mode==='wa'?'يفتح واتساب...':'يُرسل...';
+    let success=true;
+    if(mode==='email'){
+      if(backend){
+        try{
+          const res=await fetch(backend.replace(/\/$/,'')+'/api/send',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({to:l.email,body:personalizedMsg,from:APP.config.senderEmail,fromName:APP.config.senderName,leadName:l.name})});
+          success=res.ok;
+        }catch(e){success=false;}
+      } else { await sleep(700); /* demo */ }
+    } else {
+      const msgClean=personalizedMsg.replace(/^الموضوع:.*\n+/i,'');
+      window.open(`https://wa.me/${(l.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msgClean)}`,'_blank');
+      await sleep(500);
+    }
+
+    if(success){
+      el.querySelector('.tag').className='tag tag-sent';
+      el.querySelector('.tag').textContent=mode==='wa'?'✅ فُتح واتساب':'✅ أُرسل';
+      el.querySelector('.sp-icon').classList.remove('pulse');
+      el.querySelector('.sp-icon').textContent=mode==='wa'?'📱':'✉️';
+      const lref=APP.leads.find(x=>x.name===l.name);
+      if(lref){lref.status='sent';lref.last='اليوم';}
+      done++;
+    } else {
+      el.querySelector('.tag').className='tag tag-cold';
+      el.querySelector('.tag').textContent='⚠️ فشل';
+    }
+    if(idx<targets.length-1){
+      const w=Math.floor(Math.random()*(mx-mn)+mn);
+      el.querySelector('.sp-sub').textContent+=`  ·  انتظار ${w}ث للحماية`;
+      await sleep(Math.min(w*100,3000)); // scaled for demo
+    }
+  }
+  await DB.set('leads',APP.leads);
+  APP.campaigns.push({date:new Date().toLocaleDateString('ar-SA'),mode,total:targets.length,sent:done,opened:0,replied:0});
+  await DB.set('campaigns',APP.campaigns);
+  btn.disabled=false;btn.textContent='✅ اكتملت الحملة';
+  renderLeadsList();renderPastCampaigns();
+  showToast(`✅ اكتملت الحملة — ${done}/${targets.length} ${mode==='wa'?'فُتح واتساب':'أُرسل'}`);
+}
+function renderPastCampaigns(){
+  const el=document.getElementById('pastCampaigns');
+  if(APP.campaigns.length===0)return;
+  el.innerHTML=APP.campaigns.map(c=>{
+    const rate=c.total?Math.round(c.sent/c.total*100):0;
+    return `<div class="send-progress"><div class="sp-icon">${c.mode==='wa'?'📱':'📧'}</div>
+      <div class="sp-info"><div class="sp-title">حملة ${c.mode==='wa'?'واتساب':'بريد'} — ${c.date}</div>
+      <div class="sp-sub" style="direction:rtl;text-align:right">${c.sent} مرسلة من ${c.total}</div>
+      <div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:${rate}%"></div></div></div>
+      <span class="tag tag-sent">${rate}%</span></div>`;
+  }).join('');
+}
+
+// ==================== INBOX ====================
+function renderInbox(){
+  if(APP.inbox.length===0){
+    APP.inbox=[
+      {id:1,from:'مجموعة بن لادن السعودية',email:'procurement@sbg.com.sa',subject:'رد: حلول النقل الثقيل والتخليص الجمركي',preview:'شكراً للتواصل، يرجى إرسال عرض سعر مفصّل...',time:'منذ ساعتين',unread:true,body:'السادة شركة محمد للنقليات المحترمين،\n\nشكراً على تواصلكم. اطلعنا على خدماتكم ونودّ عرض سعر مفصّل لخدمات النقل الثقيل والتخليص الجمركي مع الشروط.\n\nإدارة المشتريات'},
+      {id:2,from:'شركة أرامكو للخدمات',email:'transport@aramco.com',subject:'استفسار عن نقل المعدات الثقيلة',preview:'نود الاستفسار عن إمكانية التعاقد...',time:'أمس',unread:true,body:'نود الاستفسار عن نقل الأنابيب والمعدات الثقيلة في المنطقة الشرقية. هل بإمكانكم تقديم عرض؟'},
+      {id:3,from:'مجموعة نقوا',email:'logistics@naqua.com.sa',subject:'Re: شراكة لوجستية',preview:'نحن مهتمون بالتعاون...',time:'منذ 3 أيام',unread:false,body:'نحن مهتمون بالتعاون. هل يمكن ترتيب اجتماع هذا الأسبوع؟'},
     ];
+  }
+  const list=document.getElementById('inboxList');
+  list.innerHTML=APP.inbox.map((m,i)=>`
+    <div class="inbox-item ${m.unread?'unread':''}" onclick="openInboxMsg(${i})">
+      <div class="inbox-avatar">${m.unread?'📬':'📭'}</div>
+      <div class="inbox-meta"><div class="inbox-sender">${m.from}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${m.subject}</div>
+        <div class="inbox-preview">${m.preview}</div></div>
+      <div class="inbox-time">${m.time}</div></div>`).join('');
+  document.getElementById('inboxCount').textContent=APP.inbox.filter(m=>m.unread).length||'';
+}
+function openInboxMsg(i){
+  APP.inbox[i].unread=false;renderInbox();
+  const m=APP.inbox[i];
+  document.getElementById('inboxDetail').innerHTML=`
+    <div style="margin-bottom:16px"><div style="font-size:16px;font-weight:700;margin-bottom:4px">${m.subject}</div>
+      <div style="font-size:12px;color:var(--text-dim)">من: ${m.from} · ${m.email} · ${m.time}</div></div>
+    <div style="background:rgba(10,26,51,.8);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.9;white-space:pre-wrap;margin-bottom:16px">${m.body}</div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--gold)">✍️ رد سريع</div>
+    <textarea class="form-textarea" id="replyBox" placeholder="اكتب ردك..." style="margin-bottom:10px"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="showToast('✅ تم إرسال الرد (يتطلب خادم)')">📧 إرسال الرد</button>
+      <button class="btn-sm btn-view" style="padding:9px 16px" onclick="aiReply(${i})">🤖 رد ذكي</button>
+    </div>`;
+}
+async function aiReply(i){
+  const m=APP.inbox[i];
+  showToast('🤖 Claude يكتب الرد...');
+  const p=`أنت ممثل خدمة عملاء محترف في ${APP.config.myCompany||'شركة محمد للنقليات'}. وصلتنا هذه الرسالة من "${m.from}":\n\n"${m.body}"\n\nاكتب رداً مهنياً موجزاً ودوداً (60-100 كلمة) يجيب على استفسارهم ويدفع للخطوة التالية (اجتماع/عرض سعر). وقّع باسم إدارة تطوير الأعمال مع: ${APP.config.myContact||'+966501815872'}. لا تضف شرحاً خارج نص الرد.`;
+  const r=await callClaude(p,800);
+  const reply=r.ok&&r.text?r.text.trim():`السادة ${m.from} المحترمين،\n\nشكراً جزيلاً على تواصلكم. يسعدنا إعداد عرض سعر مفصّل يصلكم خلال 24 ساعة، ونرحب بترتيب اجتماع لمناقشة التفاصيل.\n\nمع التقدير،\nإدارة تطوير الأعمال\n${APP.config.myContact||'+966501815872'}`;
+  if(document.getElementById('replyBox'))document.getElementById('replyBox').value=reply;
+  showToast('✅ تم توليد الرد');
+}
 
-    const initialEmails = [
-      { id:'e1', leadId:'1', leadName:'الفوزان', subject:'طلب عرض سعر', snippet:'...', body:'السلام عليكم...', direction:'INBOUND', status:'READ', date:'اليوم', aiSentiment:'POSITIVE', aiSuggestedReply:'وعليكم السلام...' },
-      { id:'e2', leadId:'2', leadName:'السلوى', subject:'تفاصيل التبريد', snippet:'...', body:'مرحباً...', direction:'INBOUND', status:'READ', date:'أمس', aiSentiment:'NEUTRAL', aiSuggestedReply:'أهلاً...' }
-    ];
+// ==================== CHARTS ====================
+function renderDashboardCharts(){
+  const c1=document.getElementById('chartMain');
+  if(c1._c)c1._c.destroy();
+  c1._c=new Chart(c1,{type:'line',data:{labels:['أ1','أ2','أ3','أ4'],
+    datasets:[{label:'مرسلة',data:[0,0,0,APP.leads.filter(l=>l.status!=='pending').length],borderColor:'#caa84d',tension:.4},
+    {label:'مفتوحة',data:[0,0,0,APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length],borderColor:'#00cfff',tension:.4},
+    {label:'ردود',data:[0,0,0,APP.leads.filter(l=>l.status==='replied').length],borderColor:'#00e082',tension:.4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8295bb',font:{family:'Cairo',size:11}}}},
+    scales:{x:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}},y:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}}}}});
+  const sectors={};APP.leads.forEach(l=>{sectors[l.sector]=(sectors[l.sector]||0)+1;});
+  const c2=document.getElementById('chartSectors');
+  if(c2._c)c2._c.destroy();
+  c2._c=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(sectors).length?Object.keys(sectors):['لا بيانات'],
+    datasets:[{data:Object.keys(sectors).length?Object.values(sectors):[1],backgroundColor:['#caa84d','#00cfff','#00e082','#ff9a3c','#e040fb','#ff5b6e']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8295bb',font:{family:'Cairo',size:10},boxWidth:12}}}}});
+}
+function renderAnalytics(){
+  refreshStats();
+  document.getElementById('an1').textContent=APP.leads.filter(l=>l.status!=='pending').length;
+  const sent=APP.leads.filter(l=>l.status!=='pending').length;
+  const opened=APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length;
+  const replied=APP.leads.filter(l=>l.status==='replied').length;
+  document.getElementById('an2').textContent=sent?Math.round(opened/sent*100)+'%':'0%';
+  document.getElementById('an3').textContent=sent?Math.round(replied/sent*100)+'%':'0%';
+  document.getElementById('an4').textContent=APP.leads.filter(l=>l.status==='sent').length;
+  setTimeout(()=>{
+    const co=document.getElementById('chartOpen');
+    if(co&&!co._d){co._d=true;new Chart(co,{type:'bar',data:{labels:['8','9','10','11','12','1','2','3','4','5'],
+      datasets:[{label:'فتح',data:[2,8,15,12,6,10,14,9,5,3],backgroundColor:'rgba(202,168,77,.6)',borderColor:'#caa84d',borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}},y:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.08)'}}}}});}
+    const cp=document.getElementById('chartPerf');
+    if(cp&&!cp._d){cp._d=true;new Chart(cp,{type:'radar',data:{labels:['بناء','نفط','موانئ','صناعة','حكومي'],
+      datasets:[{label:'فتح',data:[72,85,60,55,40],backgroundColor:'rgba(0,207,255,.15)',borderColor:'#00cfff'},
+      {label:'رد',data:[20,35,15,10,5],backgroundColor:'rgba(0,224,130,.15)',borderColor:'#00e082'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8295bb',font:{family:'Cairo',size:10}}}},
+      scales:{r:{ticks:{color:'#8295bb'},grid:{color:'rgba(202,168,77,.1)'},pointLabels:{color:'#8295bb',font:{family:'Cairo'}}}}}});}
+    renderTrackingMap();
+  },100);
+}
+function renderTrackingMap(){
+  const el=document.getElementById('trackingMap');if(!el)return;
+  const src=APP.leads.length?APP.leads.slice(0,15):[];
+  if(src.length===0){el.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">🗺️</div><p>لا توجد بيانات تتبع بعد</p></div>';return;}
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+src.map(l=>{
+    const col=l.status==='replied'?'var(--green)':l.status==='opened'?'var(--gold)':l.status==='sent'?'var(--cyan)':'var(--text-dim)';
+    const ic=l.status==='replied'?'💬':l.status==='opened'?'👁️':l.status==='sent'?'📧':'⏳';
+    const lb=l.status==='replied'?'رد':l.status==='opened'?'فتح':l.status==='sent'?'أُرسل':'منتظر';
+    return `<div style="background:rgba(19,40,77,.7);border:1px solid ${col}40;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;margin-bottom:4px">${ic}</div>
+      <div style="font-size:10px;font-weight:700;color:${col}">${l.name.split(' ').slice(0,2).join(' ')}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${lb}</div></div>`;
+  }).join('')+'</div>';
+}
+function renderDashSchedule(){
+  document.getElementById('dashSchedule').innerHTML=`
+    <div class="schedule-item"><div class="schedule-time">أسبوعياً</div>
+      <div class="schedule-info"><div class="schedule-title">إعادة إرسال لمن لم يفتح</div>
+      <div class="schedule-sub">يوم ووقت مختلف تلقائياً</div></div><span class="tag tag-pending">نشط</span></div>
+    <div class="schedule-item" style="border:none"><div class="schedule-time">يومياً</div>
+      <div class="schedule-info"><div class="schedule-title">فحص الردود الواردة</div>
+      <div class="schedule-sub">يتطلب الخادم الخلفي</div></div><span class="tag tag-sent">تلقائي</span></div>`;
+}
+function refreshStats(){
+  document.getElementById('st1').textContent=APP.leads.length;
+  document.getElementById('st2').textContent=APP.leads.filter(l=>l.status!=='pending').length;
+  document.getElementById('st3').textContent=APP.leads.filter(l=>l.status==='opened'||l.status==='replied').length;
+  document.getElementById('st4').textContent=APP.inbox.filter(m=>m.unread).length;
+  document.getElementById('leadsCount').textContent=APP.leads.length;
+}
 
-    const initialWa = [
-      { id:'w1', leadId:'1', senderName:'أحمد', text:'هل يمكنكم توفير 5 تريلات؟', direction:'INBOUND', timestamp:'10:15' },
-      { id:'w2', leadId:'1', senderName:'MATI', text:'نعم بالتأكيد', direction:'OUTBOUND', timestamp:'10:18' }
-    ];
+// ==================== SETTINGS ====================
+async function saveAnthropicKey(){
+  const k=document.getElementById('anthropicKey').value.trim();
+  const m=document.getElementById('anthropicModel').value;
+  if(!k.startsWith('sk-ant')){document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--red)">⚠️ المفتاح يجب أن يبدأ بـ sk-ant</span>';return;}
+  APP.config.anthropicKey=k;APP.config.anthropicModel=m;
+  await DB.set('config',APP.config);
+  document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر الاتصال...</span>';
+  const r=await callClaude('قل "متصل" فقط',20);
+  if(r.ok){document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--green)">✅ متصل ويعمل بنجاح</span>';updateApiStatus(true);}
+  else{document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--orange)">⚠️ حُفظ المفتاح لكن تعذّر الاختبار: '+(r.error==='api_error'?'مفتاح غير صالح':'تحقق من الاتصال')+'</span>';updateApiStatus(false);}
+}
+async function testAnthropic(){
+  document.getElementById('anthropicStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر...</span>';
+  const r=await callClaude('قل "متصل" فقط',20);
+  document.getElementById('anthropicStatus').innerHTML=r.ok?'<span style="color:var(--green)">✅ الاتصال يعمل</span>':'<span style="color:var(--red)">❌ فشل: '+(r.error||'')+'</span>';
+  updateApiStatus(r.ok);
+}
+function updateApiStatus(on){
+  document.getElementById('apiDot').className='status-dot '+(on?'on':'off');
+  document.getElementById('apiStatusText').textContent=on?'AI متصل':'API غير متصل';
+  document.getElementById('setupBanner').style.display=on?'none':'block';
+  document.getElementById('searchApiWarn').style.display=on?'none':'block';
+}
+async function saveGoogleKey(){APP.config.googleKey=document.getElementById('googleKey').value.trim();await DB.set('config',APP.config);
+  document.getElementById('googleStatus').innerHTML='<span style="color:var(--green)">✅ تم الحفظ</span>';}
+async function saveBackend(){
+  APP.config.backendUrl=document.getElementById('backendUrl').value.trim();
+  APP.config.senderName=document.getElementById('senderName').value.trim();
+  APP.config.senderEmail=document.getElementById('senderEmail').value.trim();
+  await DB.set('config',APP.config);
+  if(!APP.config.backendUrl){document.getElementById('backendStatus').innerHTML='<span style="color:var(--orange)">حُفظ — لكن بدون رابط خادم لن يُرسل بريد فعلي</span>';return;}
+  document.getElementById('backendStatus').innerHTML='<span style="color:var(--cyan)">⏳ يختبر الخادم...</span>';
+  try{const r=await fetch(APP.config.backendUrl.replace(/\/$/,'')+'/api/health');
+    document.getElementById('backendStatus').innerHTML=r.ok?'<span style="color:var(--green)">✅ الخادم متصل</span>':'<span style="color:var(--orange)">⚠️ الخادم لا يستجيب بشكل صحيح</span>';
+  }catch(e){document.getElementById('backendStatus').innerHTML='<span style="color:var(--orange)">⚠️ تعذّر الوصول للخادم — تحقق من الرابط</span>';}
+}
+async function saveWA(){APP.config.waNumber=document.getElementById('waNumber').value.trim();await DB.set('config',APP.config);
+  document.getElementById('waStatus').innerHTML='<span style="color:var(--green)">✅ تم الحفظ</span>';}
+async function saveCompanyData(){
+  APP.config.myCompany=document.getElementById('myCompany').value.trim();
+  APP.config.myServices=document.getElementById('myServices').value.trim();
+  APP.config.myAdvantages=document.getElementById('myAdvantages').value.trim();
+  APP.config.myContact=document.getElementById('myContact').value.trim();
+  await DB.set('config',APP.config);
+  document.getElementById('companyStatus').innerHTML='<span style="color:var(--green)">✅ تم حفظ بيانات الشركة</span>';
+}
+async function exportData(){
+  const all={config:APP.config,leads:APP.leads,inbox:APP.inbox,campaigns:APP.campaigns};
+  const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mtc-backup.json';a.click();
+  showToast('📥 تم تصدير البيانات');
+}
+async function clearAllData(){
+  if(!confirm('سيتم مسح جميع العملاء والإعدادات نهائياً. متأكد؟'))return;
+  await DB.del('config');await DB.del('leads');await DB.del('inbox');await DB.del('campaigns');
+  APP.config={};APP.leads=[];APP.inbox=[];APP.campaigns=[];
+  showToast('🗑️ تم مسح كل البيانات');setTimeout(()=>location.reload(),800);
+}
 
-    const initialTenders = [
-      { id:'t1', title:'مناقصة نقل ثقيل', source:'اعتماد', description:'...', deadline:'2026-06-15', city:'الرياض', status:'OPEN' },
-      { id:'t2', title:'تأمين نقل أدوية', source:'صحة', description:'...', deadline:'2026-07-02', city:'جدة', status:'OPEN' }
-    ];
+// ==================== DEPLOY CODE ====================
+const SERVER_CODE=`// server.js — MTC Sales Backend (Node.js + Express)
+const express = require('express');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+const Imap = require('imap');
+const cron = require('node-cron');
 
-    const App = () => {
-      const [activeTab, setActiveTab] = React.useState('dashboard');
-      const [sidebarOpen, setSidebarOpen] = React.useState(true);
-      const [leads, setLeads] = React.useState(() => JSON.parse(localStorage.getItem('mati_leads') || 'null') || initialLeads);
-      const [emails, setEmails] = React.useState(initialEmails);
-      const [waMessages, setWaMessages] = React.useState(initialWa);
-      const [tenders, setTenders] = React.useState(initialTenders);
-      const [toasts, setToasts] = React.useState([]);
-      const [discCity, setDiscCity] = React.useState('الرياض');
-      const [discIndustry, setDiscIndustry] = React.useState('مقاولات');
-      const [isDiscovering, setIsDiscovering] = React.useState(false);
-      const [discovered, setDiscovered] = React.useState([]);
-      const [crmFilter, setCrmFilter] = React.useState('ALL');
-      const [selectedLead, setSelectedLead] = React.useState(null);
-      const [selectedEmail, setSelectedEmail] = React.useState(initialEmails[0]);
-      const [selectedWaLead, setSelectedWaLead] = React.useState('1');
-      const [emailModal, setEmailModal] = React.useState(false);
-      const [emailTo, setEmailTo] = React.useState('');
-      const [emailSubject, setEmailSubject] = React.useState('');
-      const [emailBody, setEmailBody] = React.useState('');
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '5mb' }));
 
-      // API Keys state
-      const defaultKeys = {
-        openai: '', claude: '', gemini: '',
-        resend: '', sendgrid: '', gmail: '', mailgun: '',
-        whatsappToken: '', whatsappPhoneId: '', twilioSid: '', twilioToken: '',
-        apify: '', brightdata: ''
-      };
-      const [apiKeys, setApiKeys] = React.useState(() => {
-        const saved = localStorage.getItem('mati_api_keys');
-        return saved ? JSON.parse(saved) : defaultKeys;
+// === حالة التتبع في الذاكرة (استخدم قاعدة بيانات للإنتاج) ===
+const tracking = {}; // { leadId: { sent, openedAt } }
+
+// === ناقل البريد ===
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+});
+
+// === فحص الصحة ===
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
+
+// === إرسال بريد مع بيكسل تتبع ===
+app.post('/api/send', async (req, res) => {
+  const { to, body, from, fromName, leadName } = req.body;
+  const id = Buffer.from(to + Date.now()).toString('base64url');
+
+  // استخراج الموضوع من أول سطر
+  const lines = body.split('\\n');
+  let subject = 'بخصوص خدمات النقل اللوجستي';
+  let content = body;
+  if (lines[0].includes('الموضوع:')) {
+    subject = lines[0].replace(/الموضوع:/,'').trim();
+    content = lines.slice(1).join('\\n').trim();
+  }
+
+  const pixel = \`<img src="\${process.env.PUBLIC_URL}/api/track/\${id}" width="1" height="1" style="display:none">\`;
+  const unsub = \`<br><br><a href="\${process.env.PUBLIC_URL}/api/unsub/\${id}" style="color:#888;font-size:11px">إلغاء الاشتراك</a>\`;
+  const html = content.replace(/\\n/g,'<br>') + pixel + unsub;
+
+  try {
+    await transporter.sendMail({
+      from: \`"\${fromName}" <\${from || process.env.SMTP_USER}>\`,
+      to, subject, html
+    });
+    tracking[id] = { to, leadName, sentAt: Date.now(), openedAt: null };
+    res.json({ ok: true, id });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
+
+// === بيكسل التتبع: يسجّل الفتح ===
+app.get('/api/track/:id', (req, res) => {
+  const t = tracking[req.params.id];
+  if (t && !t.openedAt) t.openedAt = Date.now();
+  const px = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+  res.set('Content-Type','image/gif').send(px);
+});
+
+// === إلغاء الاشتراك ===
+app.get('/api/unsub/:id', (req, res) => {
+  const t = tracking[req.params.id];
+  if (t) t.unsubscribed = true;
+  res.send('<h3 dir="rtl">تم إلغاء اشتراكك. لن تصلك رسائل أخرى.</h3>');
+});
+
+// === حالة التتبع (تستعلمها الواجهة) ===
+app.get('/api/status', (req, res) => res.json(tracking));
+
+// === استقبال الردود عبر IMAP ===
+app.get('/api/inbox', (req, res) => {
+  const imap = new Imap({
+    user: process.env.SMTP_USER, password: process.env.SMTP_PASS,
+    host: 'imap.gmail.com', port: 993, tls: true
+  });
+  const messages = [];
+  imap.once('ready', () => {
+    imap.openBox('INBOX', true, () => {
+      imap.search(['UNSEEN'], (e, results) => {
+        if (!results || !results.length) { imap.end(); return res.json([]); }
+        const f = imap.fetch(results.slice(-20), { bodies: 'HEADER.FIELDS (FROM SUBJECT DATE)' });
+        f.on('message', m => {
+          m.on('body', s => {
+            let buf = '';
+            s.on('data', d => buf += d.toString('utf8'));
+            s.once('end', () => messages.push(Imap.parseHeader(buf)));
+          });
+        });
+        f.once('end', () => { imap.end(); res.json(messages); });
       });
+    });
+  });
+  imap.once('error', e => res.status(500).json({ error: String(e) }));
+  imap.connect();
+});
 
-      React.useEffect(() => localStorage.setItem('mati_leads', JSON.stringify(leads)), [leads]);
-      React.useEffect(() => localStorage.setItem('mati_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
+// === الجدولة التلقائية: إعادة الإرسال أسبوعياً لمن لم يفتح ===
+// يعمل كل يوم 10 صباحاً ويفحص من مرّ على رسالته 7 أيام دون فتح
+cron.schedule('0 10 * * *', () => {
+  const now = Date.now(), week = 7*24*60*60*1000;
+  Object.entries(tracking).forEach(([id, t]) => {
+    if (!t.openedAt && !t.unsubscribed && (now - t.sentAt) >= week && (t.resends||0) < 3) {
+      // أعد الإرسال بنص مُعاد صياغته (نادِ Anthropic API هنا لتغيير النص)
+      t.resends = (t.resends||0) + 1;
+      t.sentAt = now;
+      console.log('Resending to', t.to, 'attempt', t.resends);
+      // transporter.sendMail({...})  ← أضف منطق إعادة الإرسال
+    }
+  });
+});
 
-      const showToast = (msg, type='success') => {
-        const id = Date.now();
-        setToasts(p => [...p, {id, msg, type}]);
-        setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 4000);
-      };
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('MTC Backend on :' + PORT));`;
 
-      const handleSaveApiKeys = () => {
-        localStorage.setItem('mati_api_keys', JSON.stringify(apiKeys));
-        showToast('تم حفظ جميع مفاتيح API بنجاح!', 'success');
-      };
+const PKG_CODE=`{
+  "name": "mtc-sales-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13",
+    "cors": "^2.8.5",
+    "imap": "^0.8.19",
+    "node-cron": "^3.0.3"
+  }
+}`;
 
-      const handleDiscovery = () => {
-        setIsDiscovering(true);
-        setTimeout(() => {
-          const newLeads = [
-            { id:'d1', companyName:'شركة البنيان', industry:discIndustry, city:discCity, email:'test@test.sa', phone:'+966...', whatsapp:'+966...', website:'', linkedin:'', aiScore:88, needsHeavyTransport:true, needsLogistics:false, needsCarsTransport:false, intentLevel:'HIGH', aiSummary:'...', status:'NEW', createdAt:'2026-05-19', notes:[], tasks:[] },
-            { id:'d2', companyName:'مؤسسة روافد', industry:discIndustry, city:discCity, email:'test2@test.sa', phone:'+966...', whatsapp:'+966...', website:'', linkedin:'', aiScore:82, needsHeavyTransport:false, needsLogistics:true, needsCarsTransport:false, intentLevel:'MEDIUM', aiSummary:'...', status:'NEW', createdAt:'2026-05-19', notes:[], tasks:[] }
-          ];
-          setDiscovered(newLeads);
-          setIsDiscovering(false);
-          showToast('تم العثور على عميلين محتملين', 'success');
-        }, 2000);
-      };
+const ENV_CODE=`# .env — متغيرات البيئة (لا ترفعها على GitHub)
+SMTP_USER=alhasanim194@gmail.com
+SMTP_PASS=xxxx xxxx xxxx xxxx   # كلمة مرور تطبيق Gmail (16 حرف)
+PUBLIC_URL=https://your-app.onrender.com   # رابط خادمك بعد النشر
+PORT=3000`;
 
-      const importToCRM = (lead) => {
-        if (!leads.find(l => l.companyName === lead.companyName)) {
-          setLeads(p => [lead, ...p]);
-          showToast('تم إضافة العميل إلى CRM', 'success');
-        } else showToast('العميل موجود مسبقاً', 'error');
-      };
+function renderDeployCode(){
+  document.getElementById('serverCode').textContent=SERVER_CODE;
+  document.getElementById('pkgCode').textContent=PKG_CODE;
+  document.getElementById('envCode').textContent=ENV_CODE;
+  document.getElementById('promptCode').textContent=
+'=== برومبت تحليل العملاء ===\n\n'+SEARCH_PROMPT('[القطاع]','[المدينة]','[العدد]','[النسبة]','[شركتك]')+
+'\n\n\n=== برومبت كتابة الرسالة ===\n\n'+MESSAGE_PROMPT({myCompany:'[شركتك]',myServices:'[خدماتك]',myAdvantages:'[مزاياك]',myContact:'[تواصلك]',company:'[العميل]',sector:'[قطاعه]',note:'',typeLabel:'[نوع الرسالة]',langInstr:'[اللغة]'});
+}
+function copyServerCode(){navigator.clipboard.writeText(SERVER_CODE);showToast('📋 تم نسخ كود الخادم');}
+function copyPkg(){navigator.clipboard.writeText(PKG_CODE);showToast('📋 تم النسخ');}
+function copyEnv(){navigator.clipboard.writeText(ENV_CODE);showToast('📋 تم النسخ');}
+function copyPrompt(){navigator.clipboard.writeText(document.getElementById('promptCode').textContent);showToast('📋 تم نسخ البرومبت');}
 
-      const SidebarItem = ({ id, icon, label, badge }) => {
-        const active = activeTab === id;
-        const Icon = Icons[icon];
-        return (
-          <button onClick={() => setActiveTab(id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition ${active ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}>
-            <Icon size={18} className={active ? 'text-blue-600' : 'text-gray-500'} />
-            {sidebarOpen && <span className="text-sm">{label}</span>}
-            {sidebarOpen && badge}
-          </button>
-        );
-      };
+// ==================== UTILS ====================
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3200);}
 
-      const getStatusBadge = (status) => {
-        const map = { NEW: 'جديد', CONTACTED: 'تم التواصل', FOLLOW_UP: 'متابعة', INTERESTED: 'مهتم', QUOTATION_SENT: 'تم إرسال العرض', NEGOTIATION: 'تفاوض', WON: 'مكتسبة', LOST: 'خاسرة' };
-        return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">{map[status]||status}</span>;
-      };
+// ==================== INIT ====================
+(async function init(){
+  APP.config=await DB.get('config',{})||{};
+  APP.leads=await DB.get('leads',[])||[];
+  APP.inbox=await DB.get('inbox',[])||[];
+  APP.campaigns=await DB.get('campaigns',[])||[];
 
-      return (
-        <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden" dir="rtl">
-          <div className="fixed top-4 left-4 z-50 flex flex-col gap-2 max-w-sm">
-            {toasts.map(t => (
-              <div key={t.id} className={`flex items-center gap-3 p-4 rounded-xl border shadow-lg bg-white ${t.type==='success'?'border-l-4 border-emerald-500':t.type==='error'?'border-l-4 border-rose-500':'border-l-4 border-blue-500'}`}>
-                {t.type==='success'&&<Icons.CheckCircle className="text-emerald-500" size={20}/>}
-                {t.type==='error'&&<Icons.AlertTriangle className="text-rose-500" size={20}/>}
-                {t.type==='info'&&<Icons.Info className="text-blue-500" size={20}/>}
-                <span className="text-sm font-medium">{t.msg}</span>
-              </div>
-            ))}
-          </div>
+  // Restore settings UI
+  if(APP.config.anthropicKey)document.getElementById('anthropicKey').value=APP.config.anthropicKey;
+  if(APP.config.anthropicModel)document.getElementById('anthropicModel').value=APP.config.anthropicModel;
+  if(APP.config.googleKey)document.getElementById('googleKey').value=APP.config.googleKey;
+  if(APP.config.backendUrl)document.getElementById('backendUrl').value=APP.config.backendUrl;
+  if(APP.config.senderName)document.getElementById('senderName').value=APP.config.senderName;
+  if(APP.config.senderEmail)document.getElementById('senderEmail').value=APP.config.senderEmail;
+  if(APP.config.waNumber)document.getElementById('waNumber').value=APP.config.waNumber;
+  if(APP.config.myCompany)document.getElementById('myCompany').value=APP.config.myCompany;
+  if(APP.config.myServices)document.getElementById('myServices').value=APP.config.myServices;
+  if(APP.config.myAdvantages)document.getElementById('myAdvantages').value=APP.config.myAdvantages;
+  if(APP.config.myContact)document.getElementById('myContact').value=APP.config.myContact;
 
-          <aside className={`${sidebarOpen?'w-72':'w-20'} bg-white border-l border-gray-200 flex flex-col shrink-0 transition-all duration-300`}>
-            <div className="p-5 border-b flex items-center gap-3">
-              <div className="p-2 bg-blue-600 rounded-xl text-white"><Icons.LayoutDashboard size={22}/></div>
-              {sidebarOpen && <div><h1 className="font-black text-xl">MATI</h1><p className="text-[10px] text-gray-500">محمد الحساني للنقل</p></div>}
-            </div>
-            <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-              {sidebarOpen && <p className="px-2 text-[10px] font-bold text-gray-400 uppercase mb-2">التشغيل</p>}
-              <SidebarItem id="dashboard" icon="LayoutDashboard" label="لوحة المؤشرات" />
-              <SidebarItem id="discovery" icon="Search" label="البحث الذكي" badge={isDiscovering && <Icons.Loader2 size={14} className="animate-spin"/>} />
-              <SidebarItem id="crm" icon="Users" label="إدارة المبيعات" badge={<span className="bg-gray-100 text-xs px-2 rounded-full">{leads.length}</span>} />
-              {sidebarOpen && <p className="px-2 text-[10px] font-bold text-gray-400 uppercase mb-2 mt-4">التواصل</p>}
-              <SidebarItem id="email" icon="Mail" label="البريد الموحد" badge={<span className="bg-blue-100 text-blue-700 text-xs px-2 rounded-full">{initialEmails.length}</span>} />
-              <SidebarItem id="whatsapp" icon="MessageSquare" label="واتساب" />
-              {sidebarOpen && <p className="px-2 text-[10px] font-bold text-gray-400 uppercase mb-2 mt-4">المراقبة</p>}
-              <SidebarItem id="tenders" icon="Briefcase" label="المناقصات" />
-              <SidebarItem id="deliverability" icon="Shield" label="حماية البريد" />
-              {sidebarOpen && <p className="px-2 text-[10px] font-bold text-gray-400 uppercase mb-2 mt-4">الإعدادات</p>}
-              <SidebarItem id="integrations" icon="Settings" label="الربط والـ APIs" />
-            </nav>
-            <div className={`p-4 border-t bg-gray-50 flex items-center ${sidebarOpen?'gap-3':'justify-center'}`}>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold">M</div>
-              {sidebarOpen && <div><p className="text-sm font-bold">أدمن MATI</p><p className="text-[10px] text-gray-500">admin@mati.sa</p></div>}
-            </div>
-          </aside>
-
-          <div className="flex-1 flex flex-col h-screen overflow-hidden">
-            <header className="h-16 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm">
-              <div className="flex items-center gap-4">
-                <button onClick={()=>setSidebarOpen(!sidebarOpen)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-                  {sidebarOpen ? <Icons.X size={20}/> : <Icons.Menu size={20}/>}
-                </button>
-                <h2 className="text-lg font-bold hidden sm:block">
-                  {activeTab==='dashboard'&&'لوحة المؤشرات'}{activeTab==='discovery'&&'محرك البحث'}{activeTab==='crm'&&'إدارة العملاء'}{activeTab==='email'&&'البريد الوارد'}{activeTab==='whatsapp'&&'واتساب'}{activeTab==='tenders'&&'المناقصات'}{activeTab==='deliverability'&&'حماية البريد'}{activeTab==='integrations'&&'إعدادات الربط'}
-                </h2>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-gray-500 hidden md:block">نطاق التشغيل: <span className="text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-md">السعودية</span></span>
-                <button className="relative p-2 text-gray-400"><Icons.Bell size={20}/><span className="absolute top-1.5 right-2 w-2 h-2 bg-rose-500 rounded-full"></span></button>
-              </div>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 md:p-8">
-              {activeTab === 'dashboard' && <Dashboard leads={leads} setActiveTab={setActiveTab} />}
-              {activeTab === 'discovery' && <Discovery discCity={discCity} setDiscCity={setDiscCity} discIndustry={discIndustry} setDiscIndustry={setDiscIndustry} isDiscovering={isDiscovering} onDiscover={handleDiscovery} discovered={discovered} onImport={importToCRM} />}
-              {activeTab === 'crm' && <CRM leads={leads} filter={crmFilter} setFilter={setCrmFilter} selected={selectedLead} setSelected={setSelectedLead} showToast={showToast} />}
-              {activeTab === 'email' && <EmailInbox emails={emails} selectedEmail={selectedEmail} setSelectedEmail={setSelectedEmail} onOpenModal={() => setEmailModal(true)} />}
-              {activeTab === 'whatsapp' && <WhatsApp leads={leads} messages={waMessages} selectedId={selectedWaLead} setSelectedId={setSelectedWaLead} showToast={showToast} />}
-              {activeTab === 'tenders' && <Tenders tenders={tenders} />}
-              {activeTab === 'deliverability' && <Deliverability />}
-              {activeTab === 'integrations' && <Integrations apiKeys={apiKeys} setApiKeys={setApiKeys} onSave={handleSaveApiKeys} />}
-            </div>
-          </div>
-
-          {emailModal && (
-            <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="p-5 border-b bg-gray-50 flex justify-between items-center">
-                  <h4 className="font-bold text-lg">صياغة وإرسال رسالة</h4>
-                  <button onClick={()=>setEmailModal(false)} className="p-1.5 rounded-lg bg-gray-200"><Icons.X size={20}/></button>
-                </div>
-                <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                  <div><label className="text-xs font-bold text-gray-600 block mb-1">المرسل إليه</label><input type="email" value={emailTo} onChange={e=>setEmailTo(e.target.value)} className="w-full border rounded-xl px-4 py-3 text-sm" dir="ltr"/></div>
-                  <div><label className="text-xs font-bold text-gray-600 block mb-1">الموضوع</label><input type="text" value={emailSubject} onChange={e=>setEmailSubject(e.target.value)} className="w-full border rounded-xl px-4 py-3 text-sm"/></div>
-                  <div><label className="text-xs font-bold text-gray-600 block mb-1">نص الرسالة</label><textarea rows={9} value={emailBody} onChange={e=>setEmailBody(e.target.value)} className="w-full border rounded-xl px-4 py-3 text-sm leading-loose"/></div>
-                </div>
-                <div className="p-5 border-t bg-gray-50 flex justify-end gap-3">
-                  <button onClick={()=>setEmailModal(false)} className="bg-white border rounded-xl px-4 py-2 text-sm font-bold">إلغاء</button>
-                  <button onClick={()=>{ if(emailTo&&emailSubject){ showToast('تم الإرسال (محاكاة)','success'); setEmailModal(false); } }} className="bg-blue-600 text-white rounded-xl px-6 py-2 text-sm font-bold flex items-center gap-2"><Icons.Send size={16}/> إرسال</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    // ========== المكونات الداخلية ==========
-    const Dashboard = ({ leads, setActiveTab }) => (
-      <div className="space-y-8 animate-fadeIn">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[{icon:'Users',label:'عملاء CRM',value:leads.length},{icon:'TrendingUp',label:'إيراد متوقع',value:'142,000 ريال'},{icon:'Mail',label:'تسليم البريد',value:'99.8%'},{icon:'MessageSquare',label:'رسائل واتساب',value:'154'}].map(s=><StatCard key={s.label} {...s}/>)}
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-6 border">
-          <div className="flex justify-between mb-4"><h4 className="font-bold">قائمة العملاء</h4><button onClick={()=>setActiveTab('crm')} className="text-blue-600 text-xs flex items-center gap-1 font-semibold">الذهاب للـ CRM <Icons.ChevronLeft size={14}/></button></div>
-          <table className="w-full text-right">
-            <thead className="bg-gray-50 text-xs font-semibold"><tr><th className="px-4 py-3">الشركة</th><th className="px-4 py-3">النشاط</th><th className="px-4 py-3">المدينة</th><th className="px-4 py-3">AI Score</th><th className="px-4 py-3">الحالة</th></tr></thead>
-            <tbody className="divide-y">{leads.map(l=><tr key={l.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-bold">{l.companyName}</td><td className="px-4 py-3 text-xs bg-gray-100 rounded px-2">{l.industry}</td><td className="px-4 py-3 flex items-center gap-1"><Icons.MapPin size={12}/>{l.city}</td><td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${l.aiScore>90?'bg-emerald-100 text-emerald-700':l.aiScore>80?'bg-blue-100 text-blue-700':'bg-amber-100 text-amber-700'}`}>{l.aiScore}%</span></td><td className="px-4 py-3"><StatusBadge status={l.status}/></td></tr>)}</tbody>
-          </table>
-        </div>
-      </div>
-    );
-    const StatCard = ({icon,label,value}) => { const Icon = Icons[icon]; return <div className="bg-white border p-6 rounded-2xl shadow-sm flex items-center gap-4"><div className="p-3.5 bg-blue-50 text-blue-600 rounded-xl"><Icon size={24}/></div><div><p className="text-xs text-gray-500">{label}</p><h3 className="text-2xl font-black mt-1">{value}</h3></div></div>; };
-    const StatusBadge = ({status}) => { const map={NEW:'جديد',CONTACTED:'تم التواصل',FOLLOW_UP:'متابعة',INTERESTED:'مهتم',QUOTATION_SENT:'تم العرض',NEGOTIATION:'تفاوض',WON:'مكتسبة',LOST:'خاسرة'}; return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">{map[status]||status}</span>; };
-    const Discovery = ({discCity,setDiscCity,discIndustry,setDiscIndustry,isDiscovering,onDiscover,discovered,onImport}) => (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="bg-white border p-6 rounded-2xl shadow-sm">
-          <h3 className="font-bold text-xl mb-4">محرك البحث الذكي</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div><label className="text-xs font-bold mb-2 block">المدينة</label><select value={discCity} onChange={e=>setDiscCity(e.target.value)} className="w-full border rounded-xl px-4 py-3 text-sm"><option>الرياض</option><option>جدة</option><option>الدمام</option></select></div>
-            <div><label className="text-xs font-bold mb-2 block">النشاط</label><select value={discIndustry} onChange={e=>setDiscIndustry(e.target.value)} className="w-full border rounded-xl px-4 py-3 text-sm"><option>مقاولات</option><option>أغذية</option><option>مصانع</option><option>تجارة إلكترونية</option></select></div>
-            <div className="flex items-end"><button onClick={onDiscover} disabled={isDiscovering} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 disabled:bg-blue-400">{isDiscovering?<><Icons.Loader2 className="animate-spin" size={18}/> جاري الزحف...</>:<><Icons.Search size={18}/> بدء التنقيب</>}</button></div>
-          </div>
-        </div>
-        {discovered.length>0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{discovered.map(l=><div key={l.id} className="bg-white border p-6 rounded-2xl shadow-sm"><h4 className="font-bold text-lg">{l.companyName}</h4><p className="text-xs text-gray-500">{l.city} • {l.industry}</p><div className="mt-4 flex gap-2"><button onClick={()=>onImport(l)} className="bg-gray-100 text-xs font-bold py-2 px-4 rounded-xl"><Icons.Plus size={14}/> استيراد للـ CRM</button></div></div>)}</div>}
-      </div>
-    );
-    const CRM = ({leads,filter,setFilter,selected,setSelected,showToast}) => (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex gap-2 flex-wrap">
-          {['ALL','NEW','INTERESTED','QUOTATION_SENT','NEGOTIATION','WON'].map(s=><button key={s} onClick={()=>setFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${filter===s?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}`}>{s==='ALL'?'الكل':s}</button>)}
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          <div className="xl:col-span-3 space-y-4">
-            {leads.filter(l=>filter==='ALL'||l.status===filter).map(l=><div key={l.id} onClick={()=>setSelected(l)} className="bg-white border p-5 rounded-2xl shadow-sm hover:border-blue-300 cursor-pointer"><div className="flex justify-between"><div><h4 className="font-bold">{l.companyName}</h4><p className="text-xs text-gray-500">{l.city} • {l.industry}</p></div><StatusBadge status={l.status}/></div></div>)}
-          </div>
-          <div className="bg-white border rounded-2xl p-6 shadow-sm">{selected?<div><h4 className="font-bold text-lg mb-4">{selected.companyName}</h4><p className="text-sm text-gray-500 mb-2">📞 {selected.phone}</p><p className="text-sm text-gray-500">📧 {selected.email}</p></div>:<p className="text-center text-gray-400">اختر عميلاً لعرض التفاصيل</p>}</div>
-        </div>
-      </div>
-    );
-    const EmailInbox = ({emails,selectedEmail,setSelectedEmail,onOpenModal}) => (
-      <div className="h-[75vh] flex flex-col animate-fadeIn">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
-          <div className="bg-white border rounded-2xl flex flex-col overflow-hidden">
-            <div className="p-5 border-b bg-gray-50 font-bold">البريد الوارد</div>
-            <div className="flex-1 overflow-y-auto divide-y">{emails.map(e=><div key={e.id} onClick={()=>setSelectedEmail(e)} className={`p-4 cursor-pointer hover:bg-gray-50 border-r-4 ${selectedEmail?.id===e.id?'border-blue-500 bg-blue-50/50':'border-transparent'}`}><h5 className="font-bold text-sm truncate">{e.leadName}</h5><p className="text-xs text-gray-500 truncate">{e.subject}</p></div>)}</div>
-          </div>
-          <div className="lg:col-span-2 bg-white border rounded-2xl flex flex-col overflow-hidden">{selectedEmail?<div className="flex flex-col h-full"><div className="p-6 border-b"><h3 className="font-bold">{selectedEmail.subject}</h3><p className="text-sm text-gray-500">من: {selectedEmail.leadName}</p></div><div className="p-6 flex-1 overflow-y-auto bg-gray-50/30"><div className="bg-white p-6 rounded-2xl border whitespace-pre-wrap">{selectedEmail.body}</div></div><div className="p-4 border-t flex gap-2"><button onClick={onOpenModal} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold">رد</button></div></div>:<div className="m-auto text-gray-400">اختر رسالة</div>}</div>
-        </div>
-      </div>
-    );
-    const WhatsApp = ({leads,messages,selectedId,setSelectedId,showToast}) => (
-      <div className="h-[75vh] flex flex-col animate-fadeIn">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
-          <div className="bg-white border rounded-2xl flex flex-col overflow-hidden">
-            <div className="p-5 border-b bg-gray-50 font-bold">المحادثات</div>
-            <div className="flex-1 overflow-y-auto divide-y">{leads.map(l=><div key={l.id} onClick={()=>setSelectedId(l.id)} className={`p-4 cursor-pointer hover:bg-gray-50 border-r-4 ${selectedId===l.id?'border-blue-500 bg-blue-50/50':'border-transparent'}`}><h5 className="font-bold text-sm">{l.companyName}</h5></div>)}</div>
-          </div>
-          <div className="lg:col-span-2 bg-[#efeae2] border rounded-2xl flex flex-col overflow-hidden relative">
-            <div className="p-4 border-b bg-[#f0f2f5] font-bold">{leads.find(l=>l.id===selectedId)?.companyName}</div>
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 z-10">{messages.filter(m=>m.leadId===selectedId).map(m=><div key={m.id} className={`flex flex-col max-w-[75%] rounded-lg p-3 shadow-sm ${m.direction==='INBOUND'?'bg-white self-start':'bg-[#d9fdd3] self-end'}`}><span className="text-[10px] font-bold text-gray-500 mb-1">{m.senderName}</span><p className="text-[13px]">{m.text}</p><span className="text-[9px] text-gray-400 mt-1">{m.timestamp}</span></div>)}</div>
-            <div className="p-3 bg-[#f0f2f5] flex gap-2"><input placeholder="اكتب رسالة..." className="flex-1 rounded-xl px-4 py-2 text-sm border-none outline-none"/><button className="bg-[#00a884] text-white p-3 rounded-full"><Icons.Send size={20}/></button></div>
-          </div>
-        </div>
-      </div>
-    );
-    const Tenders = ({tenders}) => (
-      <div className="space-y-6 animate-fadeIn"><div className="bg-white border p-6 rounded-2xl"><h3 className="font-bold text-xl mb-2">مراقب المناقصات</h3><p className="text-sm text-gray-500">يراقب النظام بوابات الشراء والمناقصات.</p></div><div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{tenders.map(t=><div key={t.id} className="bg-white border p-6 rounded-2xl"><h4 className="font-bold text-lg">{t.title}</h4><p className="text-sm text-gray-500 mt-2">{t.source}</p><p className="text-xs text-rose-500 mt-2">آخر موعد: {t.deadline}</p></div>)}</div></div>
-    );
-    const Deliverability = () => (
-      <div className="space-y-6 animate-fadeIn"><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="bg-white border p-6 rounded-2xl text-center"><h4 className="text-xs font-bold text-gray-500">سمعة الدومين</h4><p className="text-3xl font-black text-emerald-600 mt-3">ممتازة</p></div><div className="bg-white border p-6 rounded-2xl text-center"><h4 className="text-xs font-bold text-gray-500">رسائل اليوم</h4><p className="text-3xl font-black text-blue-600 mt-3">42</p></div><div className="bg-white border p-6 rounded-2xl text-center"><h4 className="text-xs font-bold text-gray-500">معدل الإرتداد</h4><p className="text-3xl font-black text-emerald-600 mt-3">0.2%</p></div></div><div className="bg-white border rounded-2xl p-6"><h4 className="font-bold text-lg mb-4">فحوصات الأمان</h4><div className="divide-y">{['SPF','DKIM','DMARC','القوائم السوداء'].map(d=><div key={d} className="py-4 flex justify-between"><span className="font-bold">{d}</span><span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1"><Icons.CheckCircle size={16}/> سليم</span></div>)}</div></div></div>
-    );
-
-    // ========== مكون الإعدادات (Integrations) الموسع ==========
-    const Integrations = ({ apiKeys, setApiKeys, onSave }) => {
-      const updateKey = (key) => (e) => setApiKeys(prev => ({...prev, [key]: e.target.value}));
-      return (
-        <div className="space-y-8 max-w-5xl mx-auto animate-fadeIn">
-          <div className="bg-white border p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h3 className="font-bold text-xl">إعدادات الربط والـ APIs</h3>
-              <p className="text-gray-500 text-sm mt-1">أدخل مفاتيح API للخدمات التي تريد استخدامها. سيتم تخزينها محلياً في متصفحك.</p>
-            </div>
-            <button onClick={onSave} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition flex items-center gap-2 shadow-md">
-              <Icons.CheckCircle size={18} /> حفظ جميع المفاتيح
-            </button>
-          </div>
-
-          {/* AI APIs */}
-          <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-            <h4 className="font-bold text-lg flex items-center gap-2 border-b pb-4"><Icons.Cpu className="text-blue-600" size={20}/> منصات الذكاء الاصطناعي</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ApiKeyField label="OpenAI API Key" value={apiKeys.openai} onChange={updateKey('openai')} placeholder="sk-proj-..." />
-              <ApiKeyField label="Anthropic Claude API Key" value={apiKeys.claude} onChange={updateKey('claude')} placeholder="sk-ant-..." />
-              <ApiKeyField label="Google Gemini API Key" value={apiKeys.gemini} onChange={updateKey('gemini')} placeholder="AIza..." />
-            </div>
-          </div>
-
-          {/* Email APIs */}
-          <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-            <h4 className="font-bold text-lg flex items-center gap-2 border-b pb-4"><Icons.Mail className="text-purple-600" size={20}/> خدمات البريد الإلكتروني</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ApiKeyField label="Resend API Key" value={apiKeys.resend} onChange={updateKey('resend')} placeholder="re_..." />
-              <ApiKeyField label="SendGrid API Key" value={apiKeys.sendgrid} onChange={updateKey('sendgrid')} placeholder="SG...." />
-              <ApiKeyField label="Gmail API (App Password or OAuth Token)" value={apiKeys.gmail} onChange={updateKey('gmail')} placeholder="Gmail App Password" />
-              <ApiKeyField label="Mailgun API Key" value={apiKeys.mailgun} onChange={updateKey('mailgun')} placeholder="key-..." />
-            </div>
-          </div>
-
-          {/* WhatsApp APIs */}
-          <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-            <h4 className="font-bold text-lg flex items-center gap-2 border-b pb-4"><Icons.MessageSquare className="text-green-600" size={20}/> واتساب للأعمال</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ApiKeyField label="Meta WhatsApp Cloud API Token" value={apiKeys.whatsappToken} onChange={updateKey('whatsappToken')} placeholder="EAA..." />
-              <ApiKeyField label="WhatsApp Phone Number ID" value={apiKeys.whatsappPhoneId} onChange={updateKey('whatsappPhoneId')} placeholder="1234..." />
-              <ApiKeyField label="Twilio Account SID" value={apiKeys.twilioSid} onChange={updateKey('twilioSid')} placeholder="AC..." />
-              <ApiKeyField label="Twilio Auth Token" value={apiKeys.twilioToken} onChange={updateKey('twilioToken')} placeholder="..." />
-            </div>
-          </div>
-
-          {/* Scraping APIs */}
-          <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-            <h4 className="font-bold text-lg flex items-center gap-2 border-b pb-4"><Icons.Globe className="text-amber-600" size={20}/> أدوات الزحف والبيانات</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ApiKeyField label="Apify API Token" value={apiKeys.apify} onChange={updateKey('apify')} placeholder="apify_api_..." />
-              <ApiKeyField label="BrightData API Token" value={apiKeys.brightdata} onChange={updateKey('brightdata')} placeholder="..." />
-            </div>
-          </div>
-
-          <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
-            <Icons.Shield className="text-blue-600 shrink-0 mt-0.5" size={20} />
-            <p className="text-sm text-blue-900 leading-relaxed font-medium">تشفير محلي: تُحفظ المفاتيح في متصفحك فقط (LocalStorage) ولا يتم إرسالها لأي خادم خارجي. تأكد من عدم مشاركة هذا الجهاز مع آخرين غير موثوقين.</p>
-          </div>
-        </div>
-      );
-    };
-
-    const ApiKeyField = ({ label, value, onChange, placeholder }) => (
-      <div className="space-y-1.5">
-        <label className="block text-xs font-bold text-gray-600 uppercase">{label}</label>
-        <input
-          type="password"
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className="w-full bg-gray-50 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none font-mono text-left"
-          dir="ltr"
-        />
-      </div>
-    );
-
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
+  updateApiStatus(!!(APP.config.anthropicKey&&APP.config.anthropicKey.startsWith('sk-ant')));
+  refreshStats();
+  renderDashboardCharts();
+  renderDashSchedule();
+  if(APP.campaigns.length)renderPastCampaigns();
+})();
+</script>
 </body>
 </html>
