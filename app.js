@@ -1872,26 +1872,35 @@ ${myContact}`;
 // كلها تعمل من المتصفح مباشرة بدون خادم خلفي ولا حظر
 // ============================================================
 const EMAIL_PROVIDERS = {
-  // Resend — الأسهل والأفضل (3000 رسالة مجاناً شهرياً)
+  // Resend — الأسهل والأفضل (3000 رسالة مجاناً شهرياً) — يدعم مرفقات حتى 40MB
   resend: {
     name: 'Resend',
     icon: '📨',
     free_limit: '3000/شهر',
     signup: 'https://resend.com/signup',
     keys_url: 'https://resend.com/api-keys',
-    async send({ apiKey, to, subject, html, from, fromName }) {
+    supportsAttachments: true,
+    async send({ apiKey, to, subject, html, from, fromName, attachments }) {
+      const body = {
+        from: fromName ? `${fromName} <${from}>` : from,
+        to: [to],
+        subject: subject,
+        html: html
+      };
+      // Resend attachments: { filename, content (base64) }
+      if (attachments && attachments.length > 0) {
+        body.attachments = attachments.map(a => ({
+          filename: a.name,
+          content: a.base64 // base64 string (no data URL prefix)
+        }));
+      }
       const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          from: fromName ? `${fromName} <${from}>` : from,
-          to: [to],
-          subject: subject,
-          html: html
-        })
+        body: JSON.stringify(body)
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.message || 'Resend ' + resp.status);
@@ -1899,14 +1908,28 @@ const EMAIL_PROVIDERS = {
     }
   },
 
-  // Brevo (Sendinblue سابقاً) — 300 رسالة يومياً مجاناً
+  // Brevo (Sendinblue سابقاً) — 300 رسالة يومياً مجاناً — يدعم مرفقات
   brevo: {
     name: 'Brevo',
     icon: '🦊',
     free_limit: '300/يوم',
     signup: 'https://www.brevo.com/free-account/',
     keys_url: 'https://app.brevo.com/settings/keys/api',
-    async send({ apiKey, to, subject, html, from, fromName }) {
+    supportsAttachments: true,
+    async send({ apiKey, to, subject, html, from, fromName, attachments }) {
+      const body = {
+        sender: { name: fromName || 'MTC', email: from },
+        to: [{ email: to }],
+        subject: subject,
+        htmlContent: html
+      };
+      // Brevo attachments: { name, content (base64) }
+      if (attachments && attachments.length > 0) {
+        body.attachment = attachments.map(a => ({
+          name: a.name,
+          content: a.base64
+        }));
+      }
       const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -1914,12 +1937,7 @@ const EMAIL_PROVIDERS = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          sender: { name: fromName || 'MTC', email: from },
-          to: [{ email: to }],
-          subject: subject,
-          htmlContent: html
-        })
+        body: JSON.stringify(body)
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.message || 'Brevo ' + resp.status);
@@ -1927,15 +1945,15 @@ const EMAIL_PROVIDERS = {
     }
   },
 
-  // EmailJS — Free 200/شهر — يعمل تماماً من المتصفح
+  // EmailJS — Free 200/شهر — لا يدعم رفع ملفات مباشر، فقط روابط
   emailjs: {
     name: 'EmailJS',
     icon: '⚡',
     free_limit: '200/شهر',
     signup: 'https://dashboard.emailjs.com/sign-up',
     keys_url: 'https://dashboard.emailjs.com/admin/account',
+    supportsAttachments: false, // الروابط فقط (تُدرج في النص)
     async send({ apiKey, serviceId, templateId, to, subject, html, from, fromName }) {
-      // EmailJS يحتاج: publicKey + serviceId + templateId
       const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1960,16 +1978,25 @@ const EMAIL_PROVIDERS = {
     }
   },
 
-  // Backend الخلفي (الطريقة الأصلية عبر Gmail SMTP)
+  // Backend الخلفي (Gmail SMTP) — يدعم مرفقات
   backend: {
     name: 'الخادم الخلفي (Gmail)',
     icon: '🖥️',
     free_limit: 'حسب Gmail (500/يوم)',
-    async send({ backendUrl, to, body, from, fromName }) {
+    supportsAttachments: true,
+    async send({ backendUrl, to, body, from, fromName, attachments }) {
+      const payload = { to, body, from, fromName };
+      if (attachments && attachments.length > 0) {
+        payload.attachments = attachments.map(a => ({
+          filename: a.name,
+          content: a.base64,
+          encoding: 'base64'
+        }));
+      }
       const resp = await fetch(backendUrl.replace(/\/$/, '') + '/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, body, from, fromName })
+        body: JSON.stringify(payload)
       });
       if (!resp.ok) {
         const errText = await resp.text();
@@ -1978,10 +2005,11 @@ const EMAIL_PROVIDERS = {
       return { ok: true };
     }
   }
+
 };
 
 // دالة موحّدة لإرسال البريد عبر المزود المختار
-async function sendEmailUnified({ to, body, leadName }) {
+async function sendEmailUnified({ to, body, leadName, attachments, links }) {
   const provider = APP.config.emailProvider || 'resend';
   const senderEmail = APP.config.senderEmail || 'noreply@example.com';
   const senderName = APP.config.senderName || 'MTC';
@@ -1996,11 +2024,45 @@ async function sendEmailUnified({ to, body, leadName }) {
   }
 
   // تحويل النص إلى HTML
-  const html = `<div dir="rtl" style="font-family:'Tahoma',Arial,sans-serif;line-height:1.85;color:#333;max-width:600px;margin:0 auto;padding:20px">
-    ${content.replace(/\n/g, '<br>')}
-  </div>`;
+  let html = `<div dir="rtl" style="font-family:'Tahoma',Arial,sans-serif;line-height:1.85;color:#333;max-width:600px;margin:0 auto;padding:20px">
+    ${content.replace(/\n/g, '<br>')}`;
 
-  const params = { to, subject, html, from: senderEmail, fromName: senderName, body, leadName };
+  // إضافة الروابط المرفقة في نهاية النص (تعمل مع كل المزودين بما فيهم EmailJS)
+  if (links && links.length > 0) {
+    html += `
+    <hr style="margin-top:25px;border:0;border-top:1px solid #ddd">
+    <div style="margin-top:15px;padding:12px;background:#f7f7f7;border-radius:8px">
+      <div style="font-weight:bold;color:#0a1a33;margin-bottom:8px">📎 روابط مرفقة:</div>
+      ${links.map(l => `<div style="margin:6px 0">
+        <a href="${escapeAttr(l.url)}" style="color:#caa84d;text-decoration:none;font-weight:600">
+          🔗 ${escapeHtml(l.label || l.url)}
+        </a>
+      </div>`).join('')}
+    </div>`;
+  }
+  html += `</div>`;
+
+  // معالجة المرفقات للمزود الذي لا يدعمها (EmailJS): نُحوّلها لروابط download
+  let finalAttachments = attachments || [];
+  if (attachments && attachments.length > 0 && !EMAIL_PROVIDERS[provider].supportsAttachments) {
+    // إذا المزود لا يدعم، نضيف تنبيه في النص
+    html = html.replace(/<\/div>$/, '') + `
+    <hr style="margin-top:15px;border:0;border-top:1px solid #ddd">
+    <div style="margin-top:10px;padding:10px;background:#fff8e1;border-radius:6px;font-size:12px;color:#856404">
+      ⚠️ تنبيه: المزود الحالي (${EMAIL_PROVIDERS[provider].name}) لا يدعم رفع الملفات.
+      عدد الملفات المُلغاة: ${attachments.length}.
+      <br>الحل: غيّر مزود البريد إلى Resend أو Brevo لإرسال المرفقات.
+    </div></div>`;
+    finalAttachments = [];
+  }
+
+  const params = {
+    to, subject, html,
+    from: senderEmail, fromName: senderName,
+    body, leadName,
+    attachments: finalAttachments,
+    links: links || []
+  };
 
   if (provider === 'resend') {
     params.apiKey = APP.config.resendApiKey;
@@ -2093,10 +2155,23 @@ async function sendEmailSingle() {
     showToast('⚠️ اختر مزود البريد من الإعدادات', 'error');
     return;
   }
-  showToast('📤 جاري الإرسال عبر ' + EMAIL_PROVIDERS[APP.config.emailProvider].name + '...');
-  const result = await sendEmailUnified({ to, body: msg, leadName: '' });
+
+  const attachCount = APP.composeAttachments.length;
+  const linkCount = APP.composeLinks.length;
+  const attachInfo = (attachCount + linkCount) > 0
+    ? ` (مع ${attachCount} ملف${linkCount > 0 ? ' و ' + linkCount + ' رابط' : ''})`
+    : '';
+
+  showToast('📤 جاري الإرسال عبر ' + EMAIL_PROVIDERS[APP.config.emailProvider].name + attachInfo + '...');
+  const result = await sendEmailUnified({
+    to,
+    body: msg,
+    leadName: '',
+    attachments: APP.composeAttachments,
+    links: APP.composeLinks
+  });
   if (result.ok) {
-    showToast('✅ تم الإرسال بنجاح', 'success');
+    showToast(`✅ تم الإرسال بنجاح${attachInfo}`, 'success');
   } else {
     showToast('❌ ' + (result.error || 'فشل الإرسال').substring(0, 80), 'error');
   }
@@ -2119,12 +2194,212 @@ function editMsg() {
   }
 }
 
-function addAttachment(name, icon) {
-  const c = document.createElement('div');
-  c.className = 'att-chip';
-  c.innerHTML = `${icon} ${escapeHtml(name)} <span class="remove-x" onclick="this.parentElement.remove()">✕</span>`;
-  document.getElementById('attachments').appendChild(c);
-  showToast('📎 تمت الإضافة');
+// ============================================================
+// نظام المرفقات الكامل
+// يدعم: رفع ملفات (تحويل لـ base64) + روابط (Google Drive, Dropbox, ...)
+// ============================================================
+
+// State global للمرفقات والروابط في صفحة الكتابة
+APP.composeAttachments = []; // [{ id, name, size, type, base64, icon }]
+APP.composeLinks = []; // [{ id, url, label }]
+
+const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024; // 25 MB لكل ملف
+const MAX_TOTAL_ATTACHMENTS = 40 * 1024 * 1024; // 40 MB إجمالي
+
+// تحويل ملف إلى base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      // إزالة data: prefix - نريد base64 صرف فقط
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// أيقونة الملف حسب النوع
+function getFileIcon(type, name) {
+  if (type.startsWith('image/')) return '🖼️';
+  if (type === 'application/pdf') return '📄';
+  if (type.includes('word') || name.endsWith('.docx') || name.endsWith('.doc')) return '📝';
+  if (type.includes('excel') || type.includes('sheet') || name.endsWith('.xlsx') || name.endsWith('.csv')) return '📊';
+  if (type.includes('powerpoint') || name.endsWith('.pptx')) return '📽️';
+  if (type.startsWith('video/')) return '🎬';
+  if (type.startsWith('audio/')) return '🎵';
+  if (type.includes('zip') || type.includes('compressed')) return '🗜️';
+  return '📎';
+}
+
+// تنسيق حجم الملف
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+// رفع ملفات من المستخدم (يستقبل FileList)
+async function handleAttachmentUpload(files) {
+  if (!files || files.length === 0) return;
+
+  const provider = APP.config.emailProvider || 'resend';
+  if (!EMAIL_PROVIDERS[provider]?.supportsAttachments) {
+    showToast(`⚠️ ${EMAIL_PROVIDERS[provider]?.name} لا يدعم رفع الملفات — استخدم الروابط بدلاً`, 'error');
+    return;
+  }
+
+  for (const file of files) {
+    // التحقق من الحجم
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      showToast(`⚠️ "${file.name}" أكبر من 25 ميجا — تم تجاهله`, 'error');
+      continue;
+    }
+
+    // التحقق من المجموع الكلي
+    const currentTotal = APP.composeAttachments.reduce((s, a) => s + a.size, 0);
+    if (currentTotal + file.size > MAX_TOTAL_ATTACHMENTS) {
+      showToast(`⚠️ تجاوزت الحد الكلي 40 ميجا — لا يمكن إضافة "${file.name}"`, 'error');
+      continue;
+    }
+
+    showToast(`⏳ يحوّل "${file.name}"...`);
+    try {
+      const base64 = await fileToBase64(file);
+      const attachment = {
+        id: 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        name: file.name,
+        size: file.size,
+        type: file.type || 'application/octet-stream',
+        base64: base64,
+        icon: getFileIcon(file.type || '', file.name),
+        // معاينة للصور
+        previewUrl: file.type.startsWith('image/') ? `data:${file.type};base64,${base64}` : null
+      };
+      APP.composeAttachments.push(attachment);
+    } catch (e) {
+      showToast(`❌ فشل قراءة "${file.name}": ${e.message}`, 'error');
+    }
+  }
+
+  renderAttachmentsList();
+  const added = files.length;
+  showToast(`📎 تمت إضافة ${added} مرفق`, 'success');
+}
+
+// إضافة رابط مرفق (Google Drive, Dropbox, ...)
+function addAttachmentLink() {
+  const urlInput = document.getElementById('attachLinkInput');
+  const labelInput = document.getElementById('attachLinkLabel');
+  const url = urlInput?.value.trim();
+  const label = labelInput?.value.trim();
+
+  if (!url) {
+    showToast('⚠️ أدخل رابط أولاً', 'error');
+    return;
+  }
+  if (!/^https?:\/\//.test(url)) {
+    showToast('⚠️ الرابط يجب أن يبدأ بـ https:// أو http://', 'error');
+    return;
+  }
+
+  APP.composeLinks.push({
+    id: 'lnk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    url: url,
+    label: label || extractLinkLabel(url)
+  });
+
+  if (urlInput) urlInput.value = '';
+  if (labelInput) labelInput.value = '';
+  renderAttachmentsList();
+  showToast('🔗 تم إضافة الرابط', 'success');
+}
+
+// استخراج اسم افتراضي للرابط
+function extractLinkLabel(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace('www.', '');
+    if (host.includes('drive.google')) return 'ملف على Google Drive';
+    if (host.includes('dropbox')) return 'ملف على Dropbox';
+    if (host.includes('onedrive')) return 'ملف على OneDrive';
+    if (host.includes('mediafire')) return 'ملف على MediaFire';
+    if (host.includes('wetransfer')) return 'ملف على WeTransfer';
+    const path = u.pathname.split('/').filter(Boolean).pop();
+    return path ? decodeURIComponent(path) : host;
+  } catch {
+    return url.substring(0, 50);
+  }
+}
+
+// حذف مرفق
+function removeAttachment(id) {
+  APP.composeAttachments = APP.composeAttachments.filter(a => a.id !== id);
+  renderAttachmentsList();
+}
+
+// حذف رابط
+function removeAttachmentLink(id) {
+  APP.composeLinks = APP.composeLinks.filter(l => l.id !== id);
+  renderAttachmentsList();
+}
+
+// مسح كل المرفقات
+function clearAllAttachments() {
+  if (APP.composeAttachments.length === 0 && APP.composeLinks.length === 0) return;
+  if (!confirm(`مسح كل المرفقات (${APP.composeAttachments.length} ملف + ${APP.composeLinks.length} رابط)؟`)) return;
+  APP.composeAttachments = [];
+  APP.composeLinks = [];
+  renderAttachmentsList();
+  showToast('🗑️ تم مسح كل المرفقات');
+}
+
+// عرض قائمة المرفقات
+function renderAttachmentsList() {
+  const container = document.getElementById('attachmentsList');
+  if (!container) return;
+
+  const total = APP.composeAttachments.length + APP.composeLinks.length;
+  const counter = document.getElementById('attachmentsCount');
+  if (counter) counter.textContent = total > 0 ? `(${total})` : '';
+
+  if (total === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:14px">لا توجد مرفقات بعد</div>';
+    return;
+  }
+
+  const totalSize = APP.composeAttachments.reduce((s, a) => s + a.size, 0);
+  const sizeWarning = totalSize > 25 * 1024 * 1024
+    ? `<div style="font-size:11px;color:var(--orange);padding:6px 10px;background:rgba(255,154,60,0.08);border-radius:6px;margin-bottom:8px">⚠️ حجم كبير: ${formatFileSize(totalSize)} — قد لا يصل لبعض الخوادم</div>`
+    : '';
+
+  const filesHtml = APP.composeAttachments.map(a => `
+    <div class="attachment-chip" data-id="${a.id}">
+      ${a.previewUrl
+        ? `<img src="${a.previewUrl}" class="att-thumb" alt="">`
+        : `<div class="att-icon">${a.icon}</div>`}
+      <div class="att-info">
+        <div class="att-name" title="${escapeAttr(a.name)}">${escapeHtml(a.name)}</div>
+        <div class="att-meta">${formatFileSize(a.size)}</div>
+      </div>
+      <button class="att-remove" onclick="removeAttachment('${a.id}')" title="حذف">✕</button>
+    </div>
+  `).join('');
+
+  const linksHtml = APP.composeLinks.map(l => `
+    <div class="attachment-chip link-chip" data-id="${l.id}">
+      <div class="att-icon">🔗</div>
+      <div class="att-info">
+        <div class="att-name" title="${escapeAttr(l.url)}">${escapeHtml(l.label)}</div>
+        <div class="att-meta" style="direction:ltr;text-align:left">${escapeHtml(l.url.substring(0, 50))}${l.url.length > 50 ? '...' : ''}</div>
+      </div>
+      <button class="att-remove" onclick="removeAttachmentLink('${l.id}')" title="حذف">✕</button>
+    </div>
+  `).join('');
+
+  container.innerHTML = sizeWarning + filesHtml + linksHtml;
 }
 
 // ============ CAMPAIGNS ============
@@ -2172,7 +2447,13 @@ async function executeCampaign() {
     let success = true;
     if (mode === 'email') {
       if (APP.config.emailProvider) {
-        const result = await sendEmailUnified({ to: l.email, body: personalizedMsg, leadName: l.name });
+        const result = await sendEmailUnified({
+          to: l.email,
+          body: personalizedMsg,
+          leadName: l.name,
+          attachments: APP.composeAttachments,
+          links: APP.composeLinks
+        });
         success = result.ok;
         if (!result.ok) {
           el.querySelector('.sp-sub').textContent += ' · ' + (result.error || '').substring(0, 40);
@@ -3627,6 +3908,8 @@ function init() {
   renderDashboardCharts();
   renderDashSchedule();
   if (APP.campaigns.length) renderPastCampaigns();
+  // Initialize attachments list
+  renderAttachmentsList();
 }
 
 // ============ EXPOSE TO GLOBAL ============
@@ -3699,6 +3982,13 @@ window.bulkDeleteLeads = bulkDeleteLeads;
 window.bulkSendCampaign = bulkSendCampaign;
 window.bulkExportSelected = bulkExportSelected;
 window.viewLeadFromList = viewLeadFromList;
+// Attachments
+window.handleAttachmentUpload = handleAttachmentUpload;
+window.addAttachmentLink = addAttachmentLink;
+window.removeAttachment = removeAttachment;
+window.removeAttachmentLink = removeAttachmentLink;
+window.clearAllAttachments = clearAllAttachments;
+window.renderAttachmentsList = renderAttachmentsList;
 window.clearAllData = clearAllData;
 window.resetSection = resetSection;
 window.fetchInbox = fetchInbox;
