@@ -113,6 +113,32 @@ const PROVIDERS = {
       return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
     }
   },
+  manus: {
+    name: 'Manus AI', icon: '🤖',
+    async call({ apiKey, model, messages, maxTokens = 2000, baseUrl }) {
+      // Manus AI - uses OpenAI-compatible API format
+      const url = (baseUrl || 'https://api.manus.im/v1').replace(/\/$/, '') + '/chat/completions';
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: model || 'manus-default',
+          messages: messages,
+          max_tokens: maxTokens,
+          temperature: 0.7
+        })
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error('Manus ' + resp.status + ': ' + t.substring(0, 200));
+      }
+      const data = await resp.json();
+      return data.choices?.[0]?.message?.content || data.content || '';
+    }
+  },
   custom: {
     name: 'Custom', icon: '⚙️',
     async call({ apiKey, model, messages, maxTokens = 2000, baseUrl }) {
@@ -149,6 +175,7 @@ async function callAI(prompt, opts = {}) {
     const params = { apiKey, model, messages, maxTokens };
     if (pid === 'anthropic') params.proxy = APP.config.key_anthropic_proxy;
     if (pid === 'custom') params.baseUrl = APP.config.key_custom_url;
+    if (pid === 'manus') params.baseUrl = APP.config.key_manus_url;
     try {
       const text = await provider.call(params);
       if (text && text.trim()) return { ok: true, text: text.trim(), provider: pid };
@@ -183,97 +210,440 @@ function extractJSON(text) {
   return null;
 }
 
+// ============ BUSINESS DOMAINS (مجالات الأعمال) ============
+// ============================================================
+// SEARCH PROVIDERS (مزودات البحث الفعلي على الإنترنت)
+// لجلب بيانات حقيقية موثّقة وليست من ذاكرة AI
+// ============================================================
+const SEARCH_PROVIDERS = {
+  // Tavily — بحث AI مع استشهادات حقيقية (1000 بحث مجاناً شهرياً)
+  tavily: {
+    name: 'Tavily',
+    icon: '🔭',
+    free_limit: '1000/شهر',
+    signup: 'https://app.tavily.com/sign-up',
+    async search({ apiKey, query, timeRange, maxResults = 10 }) {
+      // Tavily يدعم time range نصياً مباشرة
+      const days = { day: 1, week: 7, month: 30, '6months': 180, year: 365, '2years': 730 }[timeRange] || 365;
+      const resp = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          query: query,
+          search_depth: 'advanced',
+          max_results: maxResults,
+          days: days,
+          include_answer: false,
+          include_raw_content: false
+        })
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error('Tavily ' + resp.status + ': ' + t.substring(0, 200));
+      }
+      const data = await resp.json();
+      return (data.results || []).map(r => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.content,
+        published_date: r.published_date || ''
+      }));
+    }
+  },
+
+  // SerpAPI — بحث Google حقيقي (100 بحث مجاناً شهرياً)
+  serpapi: {
+    name: 'SerpAPI (Google)',
+    icon: '🔍',
+    free_limit: '100/شهر',
+    signup: 'https://serpapi.com/users/sign_up',
+    needs_proxy: true,
+    async search({ apiKey, query, timeRange, maxResults = 10 }) {
+      const tbsMap = { day: 'qdr:d', week: 'qdr:w', month: 'qdr:m', '6months': 'qdr:m6', year: 'qdr:y', '2years': 'qdr:y2' };
+      const params = new URLSearchParams({
+        engine: 'google',
+        q: query,
+        api_key: apiKey,
+        num: String(maxResults),
+        gl: 'sa',
+        hl: 'ar',
+        tbs: tbsMap[timeRange] || 'qdr:y'
+      });
+      // SerpAPI doesn't support CORS — try direct first, fall back to proxy
+      const directUrl = `https://serpapi.com/search.json?${params}`;
+      let data;
+      try {
+        const resp = await fetch(directUrl);
+        if (!resp.ok) throw new Error('SerpAPI ' + resp.status);
+        data = await resp.json();
+      } catch (corsError) {
+        // CORS failure - try using corsproxy.io as a workaround
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(directUrl)}`;
+        const resp2 = await fetch(proxyUrl);
+        if (!resp2.ok) throw new Error('SerpAPI: ' + corsError.message + ' (CORS not supported - استخدم Serper.dev بدلاً)');
+        data = await resp2.json();
+      }
+      if (data.error) throw new Error('SerpAPI: ' + data.error);
+      return (data.organic_results || []).map(r => ({
+        title: r.title,
+        url: r.link,
+        snippet: r.snippet,
+        published_date: r.date || ''
+      }));
+    }
+  },
+
+  // Serper.dev — أفضل بديل (2500 بحث مجاني مرة واحدة + $1/1000 بعدها)
+  serper: {
+    name: 'Serper.dev',
+    icon: '⚡',
+    free_limit: '2500 بحث مجاناً (one-time)',
+    signup: 'https://serper.dev/signup',
+    async search({ apiKey, query, timeRange, maxResults = 10 }) {
+      const tbsMap = { day: 'qdr:d', week: 'qdr:w', month: 'qdr:m', '6months': 'qdr:m6', year: 'qdr:y', '2years': 'qdr:y2' };
+      const resp = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          q: query,
+          gl: 'sa',
+          hl: 'ar',
+          num: Math.min(maxResults, 100),
+          tbs: tbsMap[timeRange] || 'qdr:y'
+        })
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error('Serper ' + resp.status + ': ' + t.substring(0, 200));
+      }
+      const data = await resp.json();
+      return (data.organic || []).map(r => ({
+        title: r.title,
+        url: r.link,
+        snippet: r.snippet,
+        published_date: r.date || ''
+      }));
+    }
+  }
+};
+
+// Hunter.io — للتحقق من إيميلات الشركات (25/شهر مجاناً)
+async function hunterDomainSearch(apiKey, domain) {
+  if (!apiKey || !domain) return null;
+  try {
+    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+    const resp = await fetch(`https://api.hunter.io/v2/domain-search?domain=${cleanDomain}&api_key=${apiKey}&limit=5`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return {
+      domain: data.data?.domain,
+      organization: data.data?.organization,
+      emails: (data.data?.emails || []).map(e => ({
+        email: e.value,
+        confidence: e.confidence,
+        position: e.position || '',
+        first_name: e.first_name || '',
+        last_name: e.last_name || ''
+      }))
+    };
+  } catch (e) {
+    console.warn('Hunter error:', e);
+    return null;
+  }
+}
+
+const BUSINESS_DOMAINS = {
+  'النقل واللوجستيات': {
+    icon: '🚛',
+    sectors: [
+      'شركات البناء والمقاولات الكبرى',
+      'شركات النفط والغاز والحفر',
+      'الموانئ وشركات اللوجستيات',
+      'المصانع والشركات الصناعية',
+      'الجهات والمشاريع الحكومية',
+      'البنية التحتية والإنشاءات',
+      'مستوردي ومصدري البضائع الثقيلة',
+      'شركات تأجير المعدات الثقيلة',
+      'مشاريع نيوم والبحر الأحمر',
+      'متاجر إلكترونية كبيرة'
+    ]
+  },
+  'المقاولات والبناء': {
+    icon: '🏗️',
+    sectors: [
+      'مشاريع تطوير عقاري كبرى',
+      'فلل ومنازل خاصة',
+      'مجمعات سكنية ومخططات',
+      'مكاتب وأبراج تجارية',
+      'مراكز تسوق ومولات',
+      'فنادق ومنتجعات سياحية',
+      'مدارس وجامعات',
+      'مستشفيات ومراكز طبية',
+      'مطورين عقاريين',
+      'شركات تطوير صناعي'
+    ]
+  },
+  'العقارات والتطوير': {
+    icon: '🏢',
+    sectors: [
+      'مكاتب التسويق العقاري',
+      'مطورين عقاريين كبار',
+      'شركات إدارة الأملاك',
+      'صناديق الاستثمار العقاري (REITs)',
+      'مكاتب تأجير عقارات',
+      'وسطاء بيع وحدات سكنية',
+      'مشاريع نيوم والبحر الأحمر',
+      'مطورين فلل وقصور فاخرة',
+      'مكاتب استشارات عقارية',
+      'شركات بيع أراضي'
+    ]
+  },
+  'تأجير العقارات والوحدات': {
+    icon: '🏠',
+    sectors: [
+      'مكاتب إدارة العقارات السكنية',
+      'تأجير الشقق المفروشة',
+      'تأجير الفلل والاستراحات',
+      'تأجير مكاتب ومحلات تجارية',
+      'تأجير مستودعات ومخازن',
+      'تأجير قاعات ومناسبات',
+      'منصات إيجار قصير المدى',
+      'تأجير وحدات للموظفين',
+      'تأجير عقارات حكومية',
+      'منصات أون لاين للتأجير'
+    ]
+  },
+  'بيع الوحدات السكنية': {
+    icon: '🔑',
+    sectors: [
+      'مشاريع فلل تحت الإنشاء',
+      'مجمعات سكنية للبيع',
+      'وحدات شقق فاخرة',
+      'مخططات أراضي سكنية',
+      'مكاتب تسويق المشاريع',
+      'وسطاء البيع المعتمدين',
+      'مطورين سكنيين كبار',
+      'منصات بيع عقارية رقمية',
+      'مشاريع رؤية 2030 السكنية',
+      'مساكن الموظفين والعمال'
+    ]
+  },
+  'المحاماة والاستشارات القانونية': {
+    icon: '⚖️',
+    sectors: [
+      'شركات تحتاج استشارات تجارية',
+      'مكاتب محاسبة',
+      'مستثمرين أجانب جدد',
+      'شركات استيراد وتصدير',
+      'متاجر إلكترونية تحتاج عقوداً',
+      'شركات عقارية',
+      'مطاعم وامتيازات تجارية',
+      'شركات تقنية وستارت أب',
+      'عيادات ومستشفيات خاصة',
+      'مدارس خاصة وأكاديميات'
+    ]
+  },
+  'النظافة والتشغيل': {
+    icon: '🧹',
+    sectors: [
+      'فنادق ومنتجعات',
+      'مستشفيات ومراكز طبية',
+      'مولات ومراكز تسوق',
+      'أبراج مكاتب تجارية',
+      'مدارس وجامعات',
+      'مساجد كبرى',
+      'مطاعم وفروع امتياز',
+      'مصانع وورش',
+      'منشآت رياضية',
+      'محطات وقود ومحلات'
+    ]
+  },
+  'التصميم الجرافيكي والهوية': {
+    icon: '🎨',
+    sectors: [
+      'متاجر إلكترونية ناشئة',
+      'مطاعم وكافيهات جديدة',
+      'براندات منتجات مستحدثة',
+      'عيادات تجميل ومراكز جمال',
+      'مشاريع ناشئة (Startups)',
+      'مكاتب استشارية',
+      'محلات أزياء وموضة',
+      'منتجعات سياحية',
+      'مدارس وأكاديميات',
+      'فعاليات ومؤتمرات'
+    ]
+  },
+  'التسويق الرقمي': {
+    icon: '📱',
+    sectors: [
+      'متاجر إلكترونية تحتاج إعلانات',
+      'مطاعم وكافيهات',
+      'عيادات وعروض طبية',
+      'مكاتب عقارية',
+      'علامات تجارية ناشئة',
+      'دورات تدريبية أون لاين',
+      'منتجات صناعية محلية',
+      'تطبيقات وخدمات تقنية',
+      'فعاليات ومؤتمرات',
+      'محلات تجزئة'
+    ]
+  },
+  'تقنية المعلومات والبرمجة': {
+    icon: '💻',
+    sectors: [
+      'متاجر إلكترونية تحتاج تطوير',
+      'شركات تحتاج أنظمة ERP',
+      'عيادات تحتاج أنظمة إدارة',
+      'مدارس تحتاج LMS',
+      'مطاعم تحتاج أنظمة POS',
+      'مكاتب عقارية تحتاج CRM',
+      'فنادق تحتاج أنظمة حجز',
+      'شركات تحتاج تطبيقات جوال',
+      'متاجر فاشن تحتاج موقع',
+      'جهات حكومية - تحول رقمي'
+    ]
+  },
+  'الاستشارات الإدارية': {
+    icon: '📊',
+    sectors: [
+      'شركات في مرحلة النمو',
+      'مشاريع عائلية تحتاج هيكلة',
+      'شركات تحتاج تخطيط استراتيجي',
+      'مؤسسات تتجه للتحول',
+      'شركات تستعد للإدراج (IPO)',
+      'مكاتب تحتاج موارد بشرية',
+      'مصانع تحتاج كفاءة تشغيل',
+      'متاجر تحتاج توسع',
+      'شركات تحتاج تطوير قيادات',
+      'منشآت تحتاج إعادة هيكلة'
+    ]
+  },
+  'مخصص': {
+    icon: '⚙️',
+    sectors: []
+  }
+};
+
 // ============ DEFAULT PROMPTS ============
 const DEFAULT_PROMPTS = {
-  search: `أنت محلل تطوير أعمال متخصص في التنقيب العميق عن العملاء B2B للشركات السعودية، تعمل لصالح "{{company}}".
+  search: `أنت محلل تطوير أعمال خبير في السوق السعودي، تعمل لصالح "{{company}}".
 
-== مهمتك الأساسية ==
-ليست مجرد إعطاء قائمة شركات معروفة. مهمتك هي **التنقيب الذكي والعميق** عن عملاء محتملين أظهروا مؤخراً **إشارات نية حقيقية** للحاجة إلى خدمات النقل الثقيل والتخليص الجمركي واللوجستيات.
+== المهمة ==
+بناءً على **نتائج البحث الحقيقية** المرفقة أدناه (من الإنترنت)، استخرج عملاء محتملين حقيقيين في مجال "{{domain}}" قطاع "{{sector}}" بمنطقة "{{city}}".
 
-== مصادر التنقيب التي يجب البحث فيها ==
-1. **الأخبار والإعلانات الرسمية**: مشاريع جديدة أُعلن عنها، توسعات صناعية، افتتاح فروع، إنشاء مصانع
-2. **المناقصات المفتوحة**: في الجهات الحكومية، شركات النفط، الموانئ، البلديات
-3. **التعيينات الجديدة**: مدراء مشتريات، مدراء لوجستيات، رؤساء عمليات تم تعيينهم حديثاً
-4. **النشاط على LinkedIn**: شركات نشرت عن: توسعات، نمو، توظيف بكميات، استثمارات
-5. **الإحصاءات والتقارير**: شركات في قطاعات تنمو سريعاً وتحتاج نقلاً
-6. **العقود والشراكات**: شركات وقّعت عقوداً كبيرة تتطلب نقل بضائع/معدات
-7. **مشاريع رؤية 2030**: نيوم، البحر الأحمر، القدية، الدرعية، مشاريع ضخمة قيد التنفيذ
-8. **أخبار الاستيراد والتصدير**: شركات تستورد معدات أو مواد خام بكميات كبيرة
+== نتائج البحث الفعلية (مصدرها الإنترنت — استخدم هذه فقط) ==
+{{searchResults}}
+
+== قواعد الاستخراج الصارمة ==
+🔴 **استخدم فقط البيانات الموجودة حرفياً في نتائج البحث أعلاه** — لا تخترع، لا تخمّن.
+🔴 إذا لم تجد إيميلاً صريحاً في نص أحد النتائج → اترك email="" و email_confidence=0
+🔴 إذا لم تجد رقم هاتف صريح في النتائج → اترك phone="" و phone_confidence=0
+🔴 الروابط (website, linkedin) يجب أن تكون **من URLs الموجودة في النتائج المرفقة فقط**
+🔴 لا تخترع روابط linkedin.com — إن لم تجده في النتائج، اتركه ""
+🔴 signal_source_url يجب أن يكون URL موجود في إحدى النتائج أعلاه
 
 == معايير الاستهداف ==
+- المجال الرئيسي: {{domain}}
 - القطاع: {{sector}}
 - المنطقة: {{city}}
-- الفترة الزمنية للإشارات: {{timeRange}}
-- العدد المطلوب: {{count}} عميل (الحد الأدنى 20)
-- الحد الأدنى لنسبة الاهتمام: {{minScore}}%
-
-== تقييم نسبة الاهتمام (interest_score من 0 إلى 100) ==
-1. وجود إشارة نية حديثة وقوية (40%)
-2. حجم احتياج القطاع لخدمات النقل الثقيل (25%)
-3. حجم الشركة وقدرتها التعاقدية (20%)
-4. سهولة الوصول لصانع القرار (15%)
+- الفترة الزمنية: {{timeRange}}
+- العدد المطلوب: {{count}} عميل (لا تختلق لتصل للعدد — أرجع ما توفّر فعلياً)
+- الحد الأدنى للاهتمام: {{minScore}}%
 
 == خدمات شركتنا ==
 {{services}}
 
-== قواعد إخراج صارمة ==
-- أرجع JSON صحيح **فقط** بدون أي شرح أو نص قبله أو بعده
-- بدون \`\`\`json أو أي علامات markdown
-- ابدأ مباشرة بـ { وانتهِ بـ }
-- لكل عميل: قدّم تفاصيل **حقيقية** عن إشارة النية (signal)
-- في حقل reason: اذكر **الإشارة المحددة** التي اكتشفتها
-- في حقل source: المصدر المحتمل (Argaam, Mubasher, LinkedIn, موقع الشركة)
-- في حقل website: الموقع الرسمي الفعلي للشركة
-- في حقل linkedin: رابط LinkedIn للشركة
-- في حقل email: بريد مؤسسي واقعي (procurement@، supply@، logistics@، contracts@)
+== هيكل JSON المطلوب (أرجع JSON فقط) ==
+{"leads":[{
+  "name":"اسم الكيان كما ظهر في النتائج",
+  "name_en":"English name if found in results",
+  "entity_type":"شركة/متجر/براند/مؤسسة/مكتب",
+  "sector":"{{sector}}",
+  "city":"المدينة",
+  "email":"الإيميل من النتائج أو ''",
+  "email_source":"اسم URL النتيجة أو ''",
+  "email_confidence":0,
+  "phone":"الرقم من النتائج أو ''",
+  "phone_source":"اسم URL النتيجة أو ''",
+  "phone_confidence":0,
+  "website":"URL الموقع الرسمي من النتائج فقط",
+  "linkedin":"رابط LinkedIn من النتائج فقط أو ''",
+  "linkedin_source":"اسم النتيجة",
+  "instagram":"@handle إن وُجد في النتائج",
+  "interest_score":80,
+  "signal":"الإشارة من النتيجة",
+  "signal_date":"التاريخ من النتيجة",
+  "signal_source_url":"URL النتيجة المرفقة",
+  "source":"اسم الموقع (Argaam, LinkedIn, موقع الشركة...)",
+  "reason":"لماذا هذا العميل مناسب لخدماتنا"
+}]}
 
-== متطلبات حقول مصدر البيانات (مهم جداً) ==
-لكل قطعة معلومات اتصال (الإيميل، الهاتف، LinkedIn) يجب توضيح **من أين حصلت عليها** و**درجة الثقة** فيها:
-- email_source: من أين الإيميل؟ ("الموقع الرسمي للشركة" / "صفحة LinkedIn الرسمية" / "السجل التجاري" / "خبر صحفي" / "تقدير حسب نمط الشركة" / "Google Maps" / "Yellow Pages")
-- email_confidence: درجة ثقة الإيميل من 0 إلى 100
-- phone_source: من أين الرقم؟ (نفس الخيارات أعلاه)
-- phone_confidence: درجة ثقة الرقم من 0 إلى 100
-- linkedin_source: من أين رابط LinkedIn؟ (إن وجد)
+== مبدأ الصدق المطلق ==
+أفضل أن تُرجع 5 عملاء ببيانات صادقة فعلية موجودة في النتائج المرفقة
+من أن تُرجع 30 عميلاً ببيانات مخترعة.
+الحقول الفارغة "" أفضل بكثير من البيانات الوهمية.
+
+ابدأ مباشرة بـ { وأرجع JSON فقط.`,
+
+  search_no_web: `أنت محلل تطوير أعمال في السوق السعودي تعمل لصالح "{{company}}".
+
+⚠️ **لا يتوفر بحث ويب الآن**. ستعتمد على معرفتك العامة فقط.
+
+== المهمة ==
+اقترح {{count}} عملاء محتملين في مجال "{{domain}}" قطاع "{{sector}}" بـ "{{city}}".
+
+== قواعد صدق صارمة (التزم بها حرفياً) ==
+🔴 اذكر فقط شركات/كيانات تعرف وجودها يقيناً
+🔴 **لا تختلق أي إيميل** — اترك email="" دائماً لأنك لا تستطيع التحقق
+🔴 **لا تختلق أي رقم هاتف** — اترك phone="" دائماً
+🔴 **لا تختلق روابط LinkedIn** — اترك "" إن لم تكن متأكداً 100%
+🔴 website فقط للشركات الكبرى المعروفة (مثل aramco.com للنفط)
+🔴 ضع رسالة واضحة في email_source: "لم يُتحقق - استخدم بحث ويب للحصول على بيانات حقيقية"
+
+== خدمات شركتنا ==
+{{services}}
 
 == هيكل JSON المطلوب ==
 {"leads":[{
-  "name":"اسم الشركة بالعربي",
-  "name_en":"Company name in English",
-  "sector":"القطاع المحدد",
+  "name":"اسم الكيان",
+  "entity_type":"النوع",
+  "sector":"{{sector}}",
   "city":"المدينة",
-  "email":"procurement@company.com.sa",
-  "email_source":"الموقع الرسمي - صفحة اتصل بنا",
-  "email_confidence":85,
-  "phone":"+966501234567",
-  "phone_source":"السجل التجاري + الموقع الرسمي",
-  "phone_confidence":90,
-  "website":"https://www.company.com.sa",
-  "linkedin":"https://www.linkedin.com/company/company-name",
-  "linkedin_source":"بحث LinkedIn",
-  "interest_score":85,
-  "signal":"الإشارة المحددة المكتشفة (مشروع/توسعة/مناقصة/تعيين)",
-  "signal_date":"تاريخ تقريبي للإشارة",
-  "source":"المصدر الرئيسي لإشارة النية (Argaam, Mubasher, LinkedIn, موقع رسمي)",
-  "reason":"شرح مختصر لماذا هذا العميل يحتاج خدماتنا"
+  "email":"",
+  "email_source":"لم يُتحقق - فعّل Tavily للحصول على بيانات حقيقية",
+  "email_confidence":0,
+  "phone":"",
+  "phone_source":"لم يُتحقق",
+  "phone_confidence":0,
+  "website":"موقع رسمي معروف فقط",
+  "linkedin":"",
+  "interest_score":75,
+  "signal":"السبب العام لاحتياج هذا الكيان لخدماتنا",
+  "signal_date":"2025",
+  "source":"معرفة عامة",
+  "reason":"شرح موجز لماذا هذا العميل مناسب"
 }]}
 
-== قواعد الصدق ==
-- إذا كان البريد تخميناً (حسب نمط الشركة)، اذكر ذلك صراحة في email_source واجعل email_confidence بين 30-60
-- إذا كان رقماً مؤسسياً عاماً (السنترال)، اذكر "سنترال الشركة - الموقع الرسمي" وضع confidence 70-90
-- إذا كنت غير متأكد من إيميل شخصي، استخدم بريد عام (info@، procurement@) واخفض الثقة
-- لا تختلق روابط LinkedIn — اتركها فارغة إن لم تكن متأكداً
+== مبدأ الصدق ==
+هدفك هو إعطاء أسماء كيانات حقيقية فقط. لا تخترع بيانات اتصال أبداً.
+البيانات الفارغة "" أفضل من المختلقة.
 
-ابدأ التنقيب الآن وأرجع {{count}} عميل على الأقل. أرجع JSON فقط.`,
+ابدأ بـ { فقط.`,
 
   message: `أنت مدير تطوير أعمال محترف ومقنع في شركة "{{myCompany}}".
 
 == بيانات شركتنا ==
+المجال: {{domain}}
 الخدمات: {{myServices}}
 المزايا التنافسية: {{myAdvantages}}
 التواصل: {{myContact}}
 
 == العميل المستهدف ==
-الشركة: {{company}}
+الكيان: {{company}}
 القطاع/النشاط: {{sector}}
 {{note}}
 
@@ -284,10 +654,10 @@ const DEFAULT_PROMPTS = {
 {{langInstr}}
 
 اكتب رسالة بريد إلكتروني احترافية مقنعة عالية التحويل وفق هذه القواعد:
-1. سطر الموضوع: اكتبه في أول سطر بصيغة "الموضوع: ..." — مخصص لاسم الشركة وغير دعائي.
-2. تحية شخصية تذكر اسم الشركة المستهدفة.
-3. جملة افتتاحية تربط بين نشاط الشركة المستهدفة واحتياجها لخدماتنا.
-4. اذكر خدمتين أو ثلاثاً من خدماتنا الأكثر صلة بقطاع هذا العميل.
+1. سطر الموضوع: اكتبه في أول سطر بصيغة "الموضوع: ..." — مخصص لاسم الكيان وغير دعائي.
+2. تحية شخصية تذكر اسم الكيان المستهدف.
+3. جملة افتتاحية تربط بين نشاط الكيان واحتياجه لخدماتنا.
+4. اذكر خدمتين أو ثلاثاً من خدماتنا الأكثر صلة بنشاط هذا العميل.
 5. دليل ثقة قصير (شريك كبير أو سنوات الخبرة).
 6. دعوة واضحة لاتخاذ إجراء (اجتماع 15 دقيقة / مكالمة / طلب عرض).
 7. توقيع رسمي باسم إدارة تطوير الأعمال مع بيانات التواصل.
@@ -391,90 +761,190 @@ function refreshFavoriteUI() {
 
 // ============ DEEP SEARCH ============
 async function startDeepSearch() {
+  const domain = document.getElementById('domainFilter').value;
   const sector = document.getElementById('sectorFilter').value;
   const city = document.getElementById('cityFilter').value;
   const timeRange = document.getElementById('timeRange').value;
   const searchDepth = document.getElementById('searchDepth').value;
   const minScore = parseInt(document.getElementById('scoreThreshold').value);
-  const count = Math.max(10, parseInt(document.getElementById('leadsMin').value) || 20);
+  const count = Math.max(5, parseInt(document.getElementById('leadsMin').value) || 15);
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
 
   const timeRangeText = {
-    day: 'آخر 24 ساعة', week: 'آخر 7 أيام',
-    month: 'الشهر الماضي', '6months': 'آخر 6 أشهر', year: 'آخر سنة'
-  }[timeRange];
+    day: `آخر 24 ساعة (${todayStr})`,
+    week: `آخر 7 أيام`,
+    month: 'الشهر الماضي',
+    '6months': 'آخر 6 أشهر (2025-2026)',
+    year: 'آخر سنة (2025-2026)',
+    '2years': 'آخر سنتين (2024-2026)'
+  }[timeRange] || 'آخر سنتين';
 
   document.getElementById('aiLoader').classList.add('active');
   document.getElementById('searchResults').style.display = 'none';
   document.getElementById('searchBtn').disabled = true;
 
-  const steps = searchDepth === 'deep' ? [
-    `🔍 يبدأ التنقيب العميق (${timeRangeText})...`,
-    '📰 يفحص الأخبار والإعلانات الرسمية...',
-    '🏗️ يحلل المشاريع والتوسعات الحديثة...',
-    '💼 يستخرج إشارات النية من LinkedIn والصحف...',
-    '📋 يرصد المناقصات والتعيينات الجديدة...',
-    '⚖️ يقيّم احتمالية كل عميل ويرتبهم...',
-    '📞 يستخرج بيانات التواصل والروابط...'
-  ] : ['يحلل القطاع...', 'يبحث في ' + city + '...', 'يقيّم النسب...', 'يرتب القائمة...', 'يجهّز التواصل...'];
+  // Determine if web search is available
+  const webSearchProvider = APP.config.searchProvider;
+  const webSearchKey = webSearchProvider ? APP.config['searchKey_' + webSearchProvider] : null;
+  const useWebSearch = webSearchProvider && webSearchKey && webSearchKey.length > 10;
+
+  const stepsBase = useWebSearch ? [
+    `🌐 يبحث على الإنترنت (${SEARCH_PROVIDERS[webSearchProvider].name})...`,
+    `🔍 ينقّب في ${domain} - ${sector}...`,
+    `📰 يفحص الأخبار الحقيقية (${timeRangeText})...`,
+    `📋 يستخرج روابط مواقع الشركات...`,
+    `🔬 ${useWebSearch ? 'يستخدم Hunter للإيميلات' : 'يستخرج بيانات التواصل'}...`,
+    `🤖 يحلل النتائج بالذكاء الاصطناعي...`,
+    `⚖️ يقيّم احتمالية كل عميل...`
+  ] : [
+    `🔍 يبدأ البحث في ${domain}...`,
+    '⚠️ لا يتوفر بحث ويب — يعتمد على معرفة AI العامة',
+    '🤖 يستخرج عملاء محتملين...',
+    '⚖️ يقيّم النسب...',
+    '📝 يجهّز النتائج...'
+  ];
 
   let si = 0, prog = 0;
   const tick = setInterval(() => {
-    prog = Math.min(prog + Math.random() * 11 + 3, 92);
-    if (si < steps.length) { document.getElementById('aiLoaderText').textContent = steps[si]; si++; }
+    prog = Math.min(prog + Math.random() * 8 + 3, 92);
+    if (si < stepsBase.length) { document.getElementById('aiLoaderText').textContent = stepsBase[si]; si++; }
     document.getElementById('aiProgress').style.width = prog + '%';
     document.getElementById('aiProgressNum').textContent = Math.round(prog) + '%';
-  }, 600);
+  }, 700);
 
   let leads = [], isReal = false, providerUsed = '', errorMsg = '';
-  const company = APP.config.myCompany || 'شركة محمد للنقليات (MTC)';
-  const services = APP.config.myServices || 'نقل ثقيل، تخليص جمركي، خدمات لوجستية';
-
-  const promptTemplate = searchDepth === 'deep' ? getPrompt('search') : buildStandardPrompt();
-  const prompt = fillPromptTokens(promptTemplate, {
-    sector, city, count: String(count), minScore: String(minScore),
-    timeRange: timeRangeText, company, services
-  });
-
-  const forceProvider = APP.pickedProvider || APP.config.favoriteProvider;
+  let webResults = [];
+  const company = APP.config.myCompany || 'شركة';
+  const services = APP.config.myServices || 'خدمات تجارية';
 
   try {
-    const result = await callAI(prompt, { maxTokens: 6000, forceProvider });
+    // STEP 1: Web search if available
+    if (useWebSearch) {
+      const sectorTerm = sector === 'جميع القطاعات' ? '' : sector;
+      const queries = [
+        `${sectorTerm} ${city} السعودية ${timeRange === 'day' || timeRange === 'week' ? '2026' : '2025 2026'} موقع OR ايميل OR تواصل`,
+        `${sectorTerm} ${city} مشروع جديد OR توسعة OR افتتاح OR مناقصة`,
+        `${domain} ${city} شركات ${timeRange === 'year' || timeRange === '2years' ? '2025' : ''}`
+      ].filter(q => q.length > 10);
+
+      for (const q of queries.slice(0, 3)) {
+        try {
+          const results = await SEARCH_PROVIDERS[webSearchProvider].search({
+            apiKey: webSearchKey,
+            query: q,
+            timeRange: timeRange,
+            maxResults: 10
+          });
+          webResults = webResults.concat(results);
+        } catch (e) {
+          console.warn('Search query failed:', e.message);
+          errorMsg = e.message;
+        }
+      }
+
+      // Deduplicate by URL
+      const seen = new Set();
+      webResults = webResults.filter(r => {
+        if (seen.has(r.url)) return false;
+        seen.add(r.url);
+        return true;
+      });
+    }
+
+    // STEP 2: Build prompt
+    let promptTemplate;
+    let promptVars;
+
+    if (useWebSearch && webResults.length > 0) {
+      // Grounded prompt with real search results
+      const searchResultsText = webResults.slice(0, 25).map((r, i) =>
+        `[${i+1}] العنوان: ${r.title}\nالرابط: ${r.url}\nالمقتطف: ${r.snippet}\nالتاريخ: ${r.published_date || 'غير محدد'}\n`
+      ).join('\n---\n');
+
+      promptTemplate = getPrompt('search');
+      promptVars = {
+        domain, sector, city, count: String(count), minScore: String(minScore),
+        timeRange: timeRangeText, company, services,
+        searchResults: searchResultsText
+      };
+    } else {
+      // Fallback to no-web prompt
+      promptTemplate = APP.config['prompt_search_no_web'] || DEFAULT_PROMPTS.search_no_web;
+      promptVars = {
+        domain, sector, city, count: String(count), minScore: String(minScore),
+        timeRange: timeRangeText, company, services
+      };
+    }
+
+    const prompt = fillPromptTokens(promptTemplate, promptVars);
+
+    // STEP 3: Call AI
+    const forceProvider = APP.pickedProvider || APP.config.favoriteProvider;
+    const result = await callAI(prompt, { maxTokens: 7000, forceProvider });
+
     if (result.ok) {
       providerUsed = PROVIDERS[result.provider]?.name || result.provider;
       const parsed = extractJSON(result.text);
       if (parsed && parsed.leads && Array.isArray(parsed.leads)) {
         leads = parsed.leads.filter(l => l && l.name).map(l => ({
           name: l.name, name_en: l.name_en || '',
-          sector: l.sector || sector, city: l.city || city.split(' ')[0],
-          email: l.email || 'info@company.com.sa',
+          entity_type: l.entity_type || '',
+          sector: l.sector || sector,
+          city: l.city || city.split(' ')[0],
+          email: l.email || '',
           email_source: l.email_source || '',
-          email_confidence: Math.round(l.email_confidence || 50),
-          phone: l.phone || '+966500000000',
+          email_confidence: Math.round(l.email_confidence || 0),
+          phone: l.phone || '',
           phone_source: l.phone_source || '',
-          phone_confidence: Math.round(l.phone_confidence || 50),
-          website: l.website || '', linkedin: l.linkedin || '',
+          phone_confidence: Math.round(l.phone_confidence || 0),
+          website: l.website || '',
+          linkedin: l.linkedin || '',
           linkedin_source: l.linkedin_source || '',
+          instagram: l.instagram || '',
           score: Math.round(l.interest_score || l.score || 50),
-          signal: l.signal || '', signal_date: l.signal_date || '',
-          source: l.source || '', reason: l.reason || '',
-          status: 'pending', last: '—', real: true
+          signal: l.signal || '',
+          signal_date: l.signal_date || '',
+          signal_source_url: l.signal_source_url || '',
+          source: l.source || '',
+          reason: l.reason || '',
+          status: 'pending', last: '—', real: true,
+          grounded: useWebSearch && webResults.length > 0
         })).filter(l => l.score >= minScore).sort((a, b) => b.score - a.score);
-        if (leads.length > 0) { isReal = true; APP.workingProviders[result.provider] = true; }
+        if (leads.length > 0) {
+          isReal = true;
+          APP.workingProviders[result.provider] = true;
+        }
       } else {
         errorMsg = 'فشل تحليل JSON من ' + providerUsed;
         console.warn('JSON parse failed. Raw:', result.text.substring(0, 500));
       }
     } else {
-      errorMsg = result.error || 'فشل الاتصال';
+      errorMsg = result.error || 'فشل الاتصال بالـ AI';
     }
+
+    // STEP 4: Enrich emails with Hunter.io if available
+    if (isReal && APP.config.hunterApiKey && leads.length > 0) {
+      document.getElementById('aiLoaderText').textContent = '📧 يتحقق من الإيميلات عبر Hunter.io...';
+      for (let i = 0; i < Math.min(leads.length, 5); i++) {
+        const lead = leads[i];
+        if (lead.website && (!lead.email || lead.email_confidence < 70)) {
+          const hunterData = await hunterDomainSearch(APP.config.hunterApiKey, lead.website);
+          if (hunterData && hunterData.emails && hunterData.emails.length > 0) {
+            const bestEmail = hunterData.emails.sort((a, b) => b.confidence - a.confidence)[0];
+            lead.email = bestEmail.email;
+            lead.email_source = `Hunter.io (${bestEmail.position || 'موظف'})`;
+            lead.email_confidence = bestEmail.confidence;
+            lead.hunter_verified = true;
+          }
+        }
+      }
+    }
+
   } catch (e) {
     errorMsg = e.message;
     console.error('Search error:', e);
-  }
-
-  if (leads.length < count) {
-    const demo = generateDemoLeads(sector, city, count - leads.length, minScore);
-    leads = leads.concat(demo).slice(0, Math.max(count, 20));
   }
 
   clearInterval(tick);
@@ -489,18 +959,48 @@ async function startDeepSearch() {
     APP.selectedSet.clear();
     document.getElementById('resultsCount').textContent = leads.length;
     const mode = document.getElementById('resultMode');
-    if (isReal) {
-      const realCount = leads.filter(l => l.real).length;
-      const depthLabel = searchDepth === 'deep' ? '🔬 تنقيب عميق' : '✓ بحث حقيقي';
-      mode.className = 'tag ' + (searchDepth === 'deep' ? 'tag-deep' : 'tag-real');
-      mode.textContent = `${depthLabel} · ${providerUsed} · ${realCount}/${leads.length} حقيقي`;
+
+    if (isReal && leads.length > 0) {
+      const groundedLabel = useWebSearch ? `🌐 بحث ويب حقيقي (${webResults.length} نتيجة)` : '⚠️ بدون بحث ويب';
+      const hunterLabel = APP.config.hunterApiKey ? ' · 📧 Hunter' : '';
+      mode.className = useWebSearch ? 'tag tag-real' : 'tag tag-pending';
+      mode.textContent = `${groundedLabel} · ${providerUsed}${hunterLabel} · ${leads.length} نتيجة`;
+      renderResultsTable(leads);
+      document.getElementById('searchResults').style.display = 'block';
+      const msg = useWebSearch
+        ? `✅ ${leads.length} عميل من بحث ويب حقيقي`
+        : `⚠️ ${leads.length} عميل (بدون تحقق ويب — أضف Tavily للجودة)`;
+      showToast(msg, useWebSearch ? 'success' : '');
     } else {
-      mode.className = 'tag tag-demo';
-      mode.textContent = errorMsg ? `⚠️ ${errorMsg.substring(0, 60)}` : 'وضع تجريبي';
+      mode.className = 'tag tag-cold';
+      mode.textContent = '⚠️ لا توجد نتائج';
+      const errorDetails = errorMsg ? `<br><br><b>التفاصيل:</b><br><code style="font-size:11px;direction:ltr;display:inline-block;text-align:left;color:var(--orange)">${escapeHtml(errorMsg.substring(0, 300))}</code>` : '';
+      const webHint = !useWebSearch ? `<div class="info-box info-purple" style="margin-top:14px;max-width:600px;margin-left:auto;margin-right:auto;text-align:right">
+        <div class="ib-title">💡 لجودة أفضل: فعّل بحث الويب</div>
+        <div>أضف مفتاح <b>Tavily</b> (مجاني 1000/شهر) في الإعدادات لتحصل على:
+        <br>✅ نتائج حقيقية موثّقة بمصادرها
+        <br>✅ إيميلات وأرقام مؤكدة
+        <br>✅ روابط مواقع تعمل فعلياً
+        </div>
+      </div>` : '';
+      document.getElementById('resultsBody').innerHTML = `<tr><td colspan="7">
+        <div class="empty-state" style="padding:40px 20px">
+          <div class="icon">🔍</div>
+          <h3 style="color:var(--gold);margin-bottom:10px">لم نجد عملاء بالمعايير المحددة</h3>
+          <p style="font-size:13px;line-height:1.9;max-width:600px;margin:0 auto">
+            <b>جرّب:</b><br>
+            • تقليل الحد الأدنى للاهتمام<br>
+            • توسيع الفترة الزمنية (سنتين بدلاً من اليوم)<br>
+            • اختيار "جميع القطاعات" بدلاً من قطاع محدد<br>
+            • تجربة نموذج AI آخر<br>
+            ${errorDetails}
+          </p>
+          ${webHint}
+          <button class="btn-primary" style="margin-top:18px" onclick="startDeepSearch()">🔄 إعادة المحاولة</button>
+        </div>
+      </td></tr>`;
+      document.getElementById('searchResults').style.display = 'block';
     }
-    renderResultsTable(leads);
-    document.getElementById('searchResults').style.display = 'block';
-    showToast(`✅ ${leads.length} عميل ${isReal ? 'حقيقي' : 'تجريبي'}`, isReal ? 'success' : '');
   }, 700);
 }
 
@@ -515,75 +1015,65 @@ function buildStandardPrompt() {
 ابدأ مباشرة بـ {. لا شرح. {{count}} عميل بالحد الأدنى. الحد الأدنى للنسبة {{minScore}}%.`;
 }
 
-function generateDemoLeads(sector, city, n, minScore) {
-  const base = [
-    { name: 'مجموعة بن لادن السعودية', sec: 'بناء ومقاولات', e: 'procurement@sbg.com.sa', w: 'https://www.sbg.com.sa' },
-    { name: 'شركة CCECC', sec: 'مقاولات', e: 'info@ccecc-sa.com', w: 'https://www.ccecc.com.cn' },
-    { name: 'السيف مهندسون مقاولون', sec: 'بناء وهندسة', e: 'projects@elseif.com', w: 'https://www.elseifsa.com' },
-    { name: 'الجهاز للمقاولات', sec: 'مقاولات', e: 'supply@aljihaz.com.sa', w: 'https://www.aljihaz.com.sa' },
-    { name: 'مجموعة نقوا', sec: 'صناعة وغذاء', e: 'logistics@naqua.com.sa', w: 'https://www.naqua.com.sa' },
-    { name: 'شركة فيل العربية', sec: 'صناعة', e: 'ops@feal.com.sa', w: 'https://www.feal.com.sa' },
-    { name: 'أرامكو السعودية', sec: 'نفط', e: 'transport@aramco.com', w: 'https://www.aramco.com' },
-    { name: 'شركة سابك', sec: 'بتروكيماويات', e: 'transport@sabic.com', w: 'https://www.sabic.com' },
-    { name: 'المياه الوطنية', sec: 'حكومي', e: 'procurement@nwc.com.sa', w: 'https://www.nwc.com.sa' },
-    { name: 'ميناء جدة الإسلامي', sec: 'موانئ', e: 'ops@mawani.gov.sa', w: 'https://mawani.gov.sa' },
-    { name: 'شركة المراعي', sec: 'غذائية', e: 'supply@almarai.com', w: 'https://www.almarai.com' },
-    { name: 'الفنار للهندسة', sec: 'هندسة', e: 'projects@alfanar.com', w: 'https://www.alfanar.com' }
-  ];
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const b = base[i % base.length];
-    const sfx = i >= base.length ? ` (فرع ${city.split(' ')[0]})` : '';
-    out.push({
-      name: b.name + sfx, sector: b.sec, city: city.split(' ')[0],
-      email: b.e,
-      email_source: 'بيانات تجريبية',
-      email_confidence: 0,
-      phone: '+96650' + (1000000 + Math.floor(Math.random() * 8999999)),
-      phone_source: 'بيانات تجريبية',
-      phone_confidence: 0,
-      website: b.w,
-      linkedin: 'https://www.linkedin.com/company/' + b.name.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 30),
-      linkedin_source: 'بيانات تجريبية',
-      score: Math.max(minScore, Math.floor(Math.random() * (95 - minScore)) + minScore),
-      signal: 'تجريبي - أضف مفتاح AI للإشارات الحقيقية',
-      source: 'demo', reason: 'وضع تجريبي',
-      status: 'pending', last: '—', real: false
-    });
-  }
-  return out.sort((a, b) => b.score - a.score);
-}
-
 function renderResultsTable(data) {
   document.getElementById('resultsBody').innerHTML = data.map((l, i) => {
     const cls = l.score >= 80 ? 'score-high' : l.score >= 60 ? 'score-mid' : 'score-low';
     const checked = APP.selectedSet.has(i) ? 'checked' : '';
     const checkMark = APP.selectedSet.has(i) ? '✓' : '';
-    const links = [];
-    if (l.website) links.push(`<a href="${escapeAttr(l.website)}" target="_blank" rel="noopener" class="lead-link">🌐 موقع</a>`);
-    if (l.linkedin) links.push(`<a href="${escapeAttr(l.linkedin)}" target="_blank" rel="noopener" class="lead-link">💼 LinkedIn</a>`);
-    const linksHtml = links.length ? links.join('') : '<span style="color:var(--text-dim);font-size:11px">—</span>';
-    const signalLine = l.signal ? `<div class="lead-source">📡 ${escapeHtml(l.signal.substring(0, 100))}${l.signal_date ? ' · ' + escapeHtml(l.signal_date) : ''}</div>` : '';
-    const sourceLine = l.source && l.source !== 'demo' ? `<div class="lead-source">📰 ${escapeHtml(l.source)}</div>` : '';
-    const realBadge = l.real ? '<span class="tag tag-real" style="font-size:9px;padding:1px 6px;margin-right:6px">✓</span>' : '';
 
-    // Build contact data with sources
+    // Smart link display: only show valid-looking URLs
+    const isValidUrl = (url) => url && /^https?:\/\/[\w.-]+\.[a-z]{2,}/i.test(url);
+    const links = [];
+    if (isValidUrl(l.website)) {
+      links.push(`<a href="${escapeAttr(l.website)}" target="_blank" rel="noopener" class="lead-link" title="${escapeAttr(l.website)}">🌐 موقع</a>`);
+    }
+    if (isValidUrl(l.linkedin) && l.linkedin.includes('linkedin.com')) {
+      links.push(`<a href="${escapeAttr(l.linkedin)}" target="_blank" rel="noopener" class="lead-link" title="${escapeAttr(l.linkedin)}">💼 LinkedIn</a>`);
+    }
+    if (l.instagram) {
+      const igHandle = l.instagram.replace(/^@/, '').replace(/^https?:\/\/.*instagram\.com\//, '');
+      if (igHandle && /^[\w.]+$/.test(igHandle)) {
+        links.push(`<a href="https://www.instagram.com/${escapeAttr(igHandle)}" target="_blank" rel="noopener" class="lead-link">📷 IG</a>`);
+      }
+    }
+    const linksHtml = links.length ? links.join('') : '<span style="color:var(--text-dim);font-size:11px">لا روابط مؤكدة</span>';
+
+    // Signal with source URL link
+    const signalLinkBtn = isValidUrl(l.signal_source_url) ?
+      ` <a href="${escapeAttr(l.signal_source_url)}" target="_blank" rel="noopener" style="color:var(--cyan);font-size:10px;text-decoration:underline">[المصدر ↗]</a>` : '';
+    const signalLine = l.signal ? `<div class="lead-source">📡 ${escapeHtml(l.signal.substring(0, 110))}${l.signal_date ? ' · <b style="color:var(--gold)">' + escapeHtml(l.signal_date) + '</b>' : ''}${signalLinkBtn}</div>` : '';
+    const sourceLine = l.source ? `<div class="lead-source">📰 ${escapeHtml(l.source)}</div>` : '';
+    const entityBadge = l.entity_type ? `<span class="tag tag-info" style="font-size:9px;padding:1px 7px;margin-right:6px">${escapeHtml(l.entity_type)}</span>` : '';
+    const groundedBadge = l.grounded ? '<span class="tag tag-real" style="font-size:9px;padding:1px 6px;margin-right:6px" title="من بحث ويب حقيقي">🌐</span>' : '';
+    const hunterBadge = l.hunter_verified ? '<span class="tag" style="font-size:9px;padding:1px 6px;margin-right:6px;background:rgba(168,85,247,0.15);color:#c4a8ff" title="مُتحقق عبر Hunter.io">📧✓</span>' : '';
+
+    // Contact display - hide if confidence too low
+    const showEmail = l.email && l.email_confidence > 0;
+    const showPhone = l.phone && l.phone_confidence > 0;
+
     const emailConfClass = l.email_confidence >= 80 ? 'conf-high' : l.email_confidence >= 50 ? 'conf-mid' : 'conf-low';
     const phoneConfClass = l.phone_confidence >= 80 ? 'conf-high' : l.phone_confidence >= 50 ? 'conf-mid' : 'conf-low';
-    const emailSrc = l.email_source ? `<div class="data-source"><span class="conf-dot ${emailConfClass}"></span>📧 ${escapeHtml(l.email_source.substring(0, 40))}${l.email_confidence ? ` <b>${l.email_confidence}%</b>` : ''}</div>` : '';
-    const phoneSrc = l.phone_source ? `<div class="data-source"><span class="conf-dot ${phoneConfClass}"></span>📞 ${escapeHtml(l.phone_source.substring(0, 40))}${l.phone_confidence ? ` <b>${l.phone_confidence}%</b>` : ''}</div>` : '';
+
+    const emailDisplay = showEmail
+      ? `<div style="font-size:11px;direction:ltr;color:var(--text-2)">${escapeHtml(l.email)}</div>
+         ${l.email_source ? `<div class="data-source"><span class="conf-dot ${emailConfClass}"></span>📧 ${escapeHtml(l.email_source.substring(0, 45))} <b>${l.email_confidence}%</b></div>` : ''}`
+      : '<div style="font-size:11px;color:var(--orange);direction:rtl">⚠️ لا إيميل مؤكد</div>';
+
+    const phoneDisplay = showPhone
+      ? `<div style="font-size:11px;direction:ltr;color:var(--text-dim);margin-top:4px">${escapeHtml(l.phone)}</div>
+         ${l.phone_source ? `<div class="data-source"><span class="conf-dot ${phoneConfClass}"></span>📞 ${escapeHtml(l.phone_source.substring(0, 45))} <b>${l.phone_confidence}%</b></div>` : ''}`
+      : '<div style="font-size:11px;color:var(--orange);direction:rtl;margin-top:4px">⚠️ لا رقم مؤكد</div>';
 
     return `<tr>
       <td><div class="checkbox-custom ${checked}" id="chk-${i}" onclick="toggleChk(${i})">${checkMark}</div></td>
       <td>
-        <div style="font-weight:600">${realBadge}${escapeHtml(l.name)}</div>
+        <div style="font-weight:600">${groundedBadge}${hunterBadge}${entityBadge}${escapeHtml(l.name)}</div>
         ${signalLine}${sourceLine}
       </td>
       <td><span class="tag tag-pending" style="font-size:10px">${escapeHtml(l.sector)}</span></td>
       <td>
-        <div style="font-size:11px;direction:ltr;color:var(--text-2)">${escapeHtml(l.email)}</div>
-        <div style="font-size:11px;direction:ltr;color:var(--text-dim);margin-top:2px">${escapeHtml(l.phone)}</div>
-        ${emailSrc}${phoneSrc}
+        ${emailDisplay}
+        ${phoneDisplay}
       </td>
       <td>${linksHtml}</td>
       <td><div class="score-bar ${cls}">
@@ -593,7 +1083,7 @@ function renderResultsTable(data) {
       <td><div class="action-btns">
         <button class="btn-sm btn-view" onclick="viewLead(${i})">عرض</button>
         <button class="btn-sm btn-send" onclick="composeForResult(${i})">✍️</button>
-        <button class="btn-sm btn-wa" onclick="waResult(${i})">📱</button>
+        ${showPhone ? `<button class="btn-sm btn-wa" onclick="waResult(${i})">📱</button>` : ''}
       </div></td>
     </tr>`;
   }).join('');
@@ -681,7 +1171,12 @@ function viewLead(i) {
 
     ${l.signal ? `<div class="info-box info-purple">
       <div class="ib-title">📡 إشارة النية المكتشفة</div>
-      <div>${escapeHtml(l.signal)}${l.signal_date ? '<br><b>التاريخ:</b> ' + escapeHtml(l.signal_date) : ''}${l.source ? '<br><b>المصدر:</b> ' + escapeHtml(l.source) : ''}</div>
+      <div>
+        ${escapeHtml(l.signal)}
+        ${l.signal_date ? '<br><b>التاريخ:</b> <span style="color:var(--gold)">' + escapeHtml(l.signal_date) + '</span>' : ''}
+        ${l.source ? '<br><b>المصدر:</b> ' + escapeHtml(l.source) : ''}
+        ${l.signal_source_url ? '<br><b>رابط الإشارة:</b> <a href="' + escapeAttr(l.signal_source_url) + '" target="_blank" rel="noopener" style="color:var(--cyan);word-break:break-all">' + escapeHtml(l.signal_source_url.substring(0, 80)) + '</a>' : ''}
+      </div>
     </div>` : ''}
 
     <div class="info-box info-gold">
@@ -909,48 +1404,363 @@ function showWADialog(phone, company, message) {
 }
 
 // ============ LEADS LIST ============
+// ============================================================
+// قائمة العملاء — نظام متطور بترقيم وبحث وتصفية
+// ============================================================
+APP.leadsView = {
+  page: 1,
+  perPage: 25,
+  filter: 'all',
+  search: '',
+  cityFilter: '',
+  priorityFilter: '',
+  originFilter: '',
+  selected: new Set()
+};
+
 function renderLeadsList() {
   const tb = document.getElementById('leadsListBody');
+  const emptyEl = document.getElementById('leadsEmpty');
+
   if (APP.leads.length === 0) {
-    document.getElementById('leadsEmpty').style.display = 'block';
-    tb.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (tb) tb.innerHTML = '';
+    renderLeadsStats();
+    renderLeadsPagination();
+    renderLeadsFilters();
     return;
   }
-  document.getElementById('leadsEmpty').style.display = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Apply filters
+  const v = APP.leadsView;
+  let filtered = APP.leads.slice();
+
+  // Status filter
+  if (v.filter === 'sent') filtered = filtered.filter(l => l.status === 'sent');
+  else if (v.filter === 'opened') filtered = filtered.filter(l => l.status === 'opened');
+  else if (v.filter === 'replied') filtered = filtered.filter(l => l.status === 'replied');
+  else if (v.filter === 'pending') filtered = filtered.filter(l => l.status === 'pending' || !l.status);
+  else if (v.filter === 'hot') filtered = filtered.filter(l => l.hot_lead);
+
+  // City filter
+  if (v.cityFilter) filtered = filtered.filter(l => l.city === v.cityFilter);
+  // Priority filter
+  if (v.priorityFilter) filtered = filtered.filter(l => l.priority === v.priorityFilter);
+  // Origin filter
+  if (v.originFilter) filtered = filtered.filter(l => l.company_origin === v.originFilter);
+
+  // Search filter
+  if (v.search) {
+    const q = v.search.toLowerCase();
+    filtered = filtered.filter(l =>
+      (l.name && l.name.toLowerCase().includes(q)) ||
+      (l.name_en && l.name_en.toLowerCase().includes(q)) ||
+      (l.email && l.email.toLowerCase().includes(q)) ||
+      (l.phone && l.phone.toLowerCase().includes(q)) ||
+      (l.sector && l.sector.toLowerCase().includes(q)) ||
+      (l.city && l.city.toLowerCase().includes(q))
+    );
+  }
+
+  // Save filtered for batch ops
+  APP.leadsView.filtered = filtered;
+  APP.leadsView.total = filtered.length;
+  APP.leadsView.pages = Math.max(1, Math.ceil(filtered.length / v.perPage));
+
+  // Clamp current page
+  if (v.page > v.pages) v.page = v.pages;
+  if (v.page < 1) v.page = 1;
+
+  // Slice for current page
+  const start = (v.page - 1) * v.perPage;
+  const slice = filtered.slice(start, start + v.perPage);
+
   const sm = { pending: 'tag-pending', sent: 'tag-sent', opened: 'tag-opened', replied: 'tag-replied', cold: 'tag-cold' };
   const sl = { pending: 'لم يُرسل', sent: 'أُرسل', opened: 'فُتح', replied: 'رد ✅', cold: 'بارد' };
-  tb.innerHTML = APP.leads.map((l, i) => {
+
+  if (slice.length === 0) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:30px">
+      <div class="icon">🔍</div>
+      <p>لا توجد نتائج تطابق التصفية الحالية</p>
+      <button class="btn-outline" style="margin-top:10px" onclick="clearLeadsFilters()">مسح التصفية</button>
+    </div></td></tr>`;
+    renderLeadsStats();
+    renderLeadsPagination();
+    return;
+  }
+
+  tb.innerHTML = slice.map((l) => {
+    const globalIdx = APP.leads.indexOf(l);
     const cls = l.score >= 80 ? 'score-high' : l.score >= 60 ? 'score-mid' : 'score-low';
     const links = [];
-    if (l.website) links.push(`<a href="${escapeAttr(l.website)}" target="_blank" rel="noopener" class="lead-link">🌐</a>`);
-    if (l.linkedin) links.push(`<a href="${escapeAttr(l.linkedin)}" target="_blank" rel="noopener" class="lead-link">💼</a>`);
-    return `<tr>
+    if (l.website) links.push(`<a href="${escapeAttr(l.website)}" target="_blank" rel="noopener" class="lead-link" title="${escapeAttr(l.website)}">🌐</a>`);
+    if (l.linkedin) links.push(`<a href="${escapeAttr(l.linkedin)}" target="_blank" rel="noopener" class="lead-link" title="LinkedIn">💼</a>`);
+
+    const isSelected = APP.leadsView.selected.has(globalIdx);
+    const checkMark = isSelected ? '✓' : '';
+
+    // Priority badge
+    const priorityColors = {
+      'عالية جداً': 'background:linear-gradient(135deg,#ff5b6e,#ff9a3c);color:#fff',
+      'عالية': 'background:rgba(255,154,60,0.2);color:var(--orange);border:1px solid var(--orange)',
+      'متوسطة': 'background:rgba(202,168,77,0.15);color:var(--gold)',
+      'منخفضة': 'background:rgba(130,149,187,0.15);color:var(--text-dim)',
+      'عادية': 'background:rgba(130,149,187,0.15);color:var(--text-dim)'
+    };
+    const priorityStyle = priorityColors[l.priority] || priorityColors['عادية'];
+    const priorityBadge = l.priority ? `<span class="tag" style="font-size:9px;padding:2px 7px;${priorityStyle}">${escapeHtml(l.priority)}</span>` : '';
+
+    const hotBadge = l.hot_lead ? '<span style="font-size:14px" title="عميل حار">🔥</span>' : '';
+    const originBadge = l.company_origin === 'سعودية' ? '🇸🇦' : l.company_origin === 'أجنبية' ? '🌍' : '';
+    const contractProb = l.contract_probability ? `<div class="data-source" style="margin-top:2px">📊 ${l.contract_probability}% احتمالية تعاقد</div>` : '';
+
+    return `<tr ${isSelected ? 'style="background:var(--gold-dim)"' : ''}>
+      <td><div class="checkbox-custom ${isSelected ? 'checked' : ''}" onclick="toggleLeadSelect(${globalIdx})">${checkMark}</div></td>
       <td>
-        <div style="font-weight:600;font-size:13px">${escapeHtml(l.name)}</div>
-        ${l.signal ? `<div class="lead-source">📡 ${escapeHtml(l.signal.substring(0, 60))}</div>` : ''}
+        <div style="font-weight:600;font-size:13px">${hotBadge} ${escapeHtml(l.name)} ${originBadge}</div>
+        ${l.signal ? `<div class="lead-source">📡 ${escapeHtml(l.signal.substring(0, 50))}</div>` : ''}
+        ${contractProb}
       </td>
-      <td><span class="tag tag-pending" style="font-size:10px">${escapeHtml(l.sector)}</span></td>
       <td>
-        <div style="font-size:11px;direction:ltr;color:var(--text-dim)">${escapeHtml(l.email)}</div>
-        <div style="font-size:11px;direction:ltr;color:var(--text-dim);margin-top:2px">${escapeHtml(l.phone)}</div>
+        <span class="tag tag-pending" style="font-size:10px">${escapeHtml(l.sector || '—')}</span>
+        ${l.city ? `<div style="font-size:10px;color:var(--text-dim);margin-top:3px">📍 ${escapeHtml(l.city)}</div>` : ''}
       </td>
-      <td>${links.join('') || '<span style="color:var(--text-dim);font-size:11px">—</span>'}</td>
-      <td><div class="score-bar ${cls}" style="min-width:85px">
+      <td>
+        <div style="font-size:11px;direction:ltr;color:var(--text-2)">${escapeHtml(l.email || '—')}</div>
+        <div style="font-size:11px;direction:ltr;color:var(--text-dim);margin-top:2px">${escapeHtml(l.phone || '—')}</div>
+      </td>
+      <td>${priorityBadge}</td>
+      <td>${links.join(' ') || '<span style="color:var(--text-dim);font-size:11px">—</span>'}</td>
+      <td><div class="score-bar ${cls}" style="min-width:75px">
         <div class="score-fill"><div class="score-fill-inner" style="width:${l.score}%"></div></div>
         <span class="score-text">${l.score}%</span></div></td>
       <td><span class="tag ${sm[l.status] || 'tag-pending'}">${sl[l.status] || '—'}</span></td>
       <td><div class="action-btns">
-        <button class="btn-sm btn-send" onclick="composeForLead(${i})">✍️</button>
-        <button class="btn-sm btn-wa" onclick="doWA(APP.leads[${i}])">📱</button>
-        <button class="btn-sm btn-danger" onclick="delLead(${i})">🗑️</button>
+        <button class="btn-sm btn-view" onclick="viewLeadFromList(${globalIdx})" title="عرض">👁️</button>
+        <button class="btn-sm btn-send" onclick="composeForLead(${globalIdx})" title="رسالة">✍️</button>
+        ${l.phone ? `<button class="btn-sm btn-wa" onclick="doWA(APP.leads[${globalIdx}])" title="واتساب">📱</button>` : ''}
+        <button class="btn-sm btn-danger" onclick="delLead(${globalIdx})" title="حذف">🗑️</button>
       </div></td>
     </tr>`;
   }).join('');
+
+  renderLeadsStats();
+  renderLeadsPagination();
+  renderLeadsFilters();
+  renderBulkActions();
+}
+
+function renderLeadsStats() {
+  const el = document.getElementById('leadsStats');
+  if (!el) return;
+  const v = APP.leadsView;
+  const total = APP.leads.length;
+  const showing = v.total !== undefined ? v.total : total;
+  const hotCount = APP.leads.filter(l => l.hot_lead).length;
+  const veryHigh = APP.leads.filter(l => l.priority === 'عالية جداً').length;
+  const sent = APP.leads.filter(l => l.status === 'sent').length;
+  const replied = APP.leads.filter(l => l.status === 'replied').length;
+
+  el.innerHTML = `
+    <div class="lead-stat"><div class="ls-val">${total}</div><div class="ls-lbl">إجمالي</div></div>
+    <div class="lead-stat"><div class="ls-val" style="color:var(--cyan)">${showing}</div><div class="ls-lbl">معروض</div></div>
+    <div class="lead-stat"><div class="ls-val" style="color:var(--red)">🔥 ${hotCount}</div><div class="ls-lbl">حار</div></div>
+    <div class="lead-stat"><div class="ls-val" style="color:var(--orange)">⭐ ${veryHigh}</div><div class="ls-lbl">عالية جداً</div></div>
+    <div class="lead-stat"><div class="ls-val" style="color:var(--gold)">${sent}</div><div class="ls-lbl">أُرسل</div></div>
+    <div class="lead-stat"><div class="ls-val" style="color:var(--green)">${replied}</div><div class="ls-lbl">رد</div></div>
+  `;
+}
+
+function renderLeadsFilters() {
+  const cityEl = document.getElementById('leadsCityFilter');
+  if (cityEl) {
+    const cities = [...new Set(APP.leads.map(l => l.city).filter(Boolean))].sort();
+    cityEl.innerHTML = '<option value="">كل المدن</option>' +
+      cities.map(c => `<option value="${escapeAttr(c)}" ${APP.leadsView.cityFilter === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+  }
+  const prioEl = document.getElementById('leadsPriorityFilter');
+  if (prioEl) {
+    const prios = [...new Set(APP.leads.map(l => l.priority).filter(Boolean))];
+    prioEl.innerHTML = '<option value="">كل الأولويات</option>' +
+      prios.map(p => `<option value="${escapeAttr(p)}" ${APP.leadsView.priorityFilter === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+  }
+  const originEl = document.getElementById('leadsOriginFilter');
+  if (originEl) {
+    const origins = [...new Set(APP.leads.map(l => l.company_origin).filter(Boolean))];
+    originEl.innerHTML = '<option value="">سعودية وأجنبية</option>' +
+      origins.map(o => `<option value="${escapeAttr(o)}" ${APP.leadsView.originFilter === o ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
+  }
+}
+
+function renderLeadsPagination() {
+  const el = document.getElementById('leadsPagination');
+  if (!el) return;
+  const v = APP.leadsView;
+  if (!v.pages || v.pages <= 1) { el.innerHTML = ''; return; }
+
+  const buttons = [];
+  buttons.push(`<button class="page-btn" onclick="changeLeadsPage(1)" ${v.page === 1 ? 'disabled' : ''}>«</button>`);
+  buttons.push(`<button class="page-btn" onclick="changeLeadsPage(${v.page - 1})" ${v.page === 1 ? 'disabled' : ''}>‹</button>`);
+
+  // Show pages around current
+  const showRange = 2;
+  const pages = [];
+  for (let i = Math.max(1, v.page - showRange); i <= Math.min(v.pages, v.page + showRange); i++) pages.push(i);
+  if (pages[0] > 1) {
+    buttons.push(`<button class="page-btn" onclick="changeLeadsPage(1)">1</button>`);
+    if (pages[0] > 2) buttons.push('<span class="page-ellipsis">…</span>');
+  }
+  pages.forEach(p => {
+    buttons.push(`<button class="page-btn ${p === v.page ? 'active' : ''}" onclick="changeLeadsPage(${p})">${p}</button>`);
+  });
+  if (pages[pages.length - 1] < v.pages) {
+    if (pages[pages.length - 1] < v.pages - 1) buttons.push('<span class="page-ellipsis">…</span>');
+    buttons.push(`<button class="page-btn" onclick="changeLeadsPage(${v.pages})">${v.pages}</button>`);
+  }
+
+  buttons.push(`<button class="page-btn" onclick="changeLeadsPage(${v.page + 1})" ${v.page === v.pages ? 'disabled' : ''}>›</button>`);
+  buttons.push(`<button class="page-btn" onclick="changeLeadsPage(${v.pages})" ${v.page === v.pages ? 'disabled' : ''}>»</button>`);
+
+  el.innerHTML = buttons.join('') +
+    `<span class="page-info">صفحة ${v.page} من ${v.pages} · ${v.total} عميل</span>`;
+}
+
+function renderBulkActions() {
+  const el = document.getElementById('bulkActions');
+  if (!el) return;
+  const count = APP.leadsView.selected.size;
+  if (count === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.querySelector('.bulk-count').textContent = count;
+}
+
+function changeLeadsPage(p) {
+  APP.leadsView.page = p;
+  renderLeadsList();
+  document.querySelector('.leads-table-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function leadsSearch(query) {
+  APP.leadsView.search = query;
+  APP.leadsView.page = 1;
+  renderLeadsList();
+}
+
+function leadsFilterByCity(city) {
+  APP.leadsView.cityFilter = city;
+  APP.leadsView.page = 1;
+  renderLeadsList();
+}
+
+function leadsFilterByPriority(p) {
+  APP.leadsView.priorityFilter = p;
+  APP.leadsView.page = 1;
+  renderLeadsList();
+}
+
+function leadsFilterByOrigin(o) {
+  APP.leadsView.originFilter = o;
+  APP.leadsView.page = 1;
+  renderLeadsList();
+}
+
+function clearLeadsFilters() {
+  APP.leadsView.filter = 'all';
+  APP.leadsView.search = '';
+  APP.leadsView.cityFilter = '';
+  APP.leadsView.priorityFilter = '';
+  APP.leadsView.originFilter = '';
+  APP.leadsView.page = 1;
+  const si = document.getElementById('leadsSearchInput');
+  if (si) si.value = '';
+  document.querySelectorAll('#page-leads .filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('#page-leads .filter-btn[data-filter="all"]')?.classList.add('active');
+  renderLeadsList();
+}
+
+function changeLeadsPerPage(n) {
+  APP.leadsView.perPage = parseInt(n) || 25;
+  APP.leadsView.page = 1;
+  renderLeadsList();
+}
+
+function toggleLeadSelect(idx) {
+  if (APP.leadsView.selected.has(idx)) APP.leadsView.selected.delete(idx);
+  else APP.leadsView.selected.add(idx);
+  renderLeadsList();
+}
+
+function selectAllVisibleLeads() {
+  const v = APP.leadsView;
+  const filtered = v.filtered || APP.leads;
+  const start = (v.page - 1) * v.perPage;
+  const slice = filtered.slice(start, start + v.perPage);
+  slice.forEach(l => APP.leadsView.selected.add(APP.leads.indexOf(l)));
+  renderLeadsList();
+  showToast(`✓ تم تحديد ${slice.length} عميل في هذه الصفحة`);
+}
+
+function selectAllFilteredLeads() {
+  const filtered = APP.leadsView.filtered || APP.leads;
+  filtered.forEach(l => APP.leadsView.selected.add(APP.leads.indexOf(l)));
+  renderLeadsList();
+  showToast(`✓ تم تحديد ${filtered.length} عميل`);
+}
+
+function deselectAllLeads() {
+  APP.leadsView.selected.clear();
+  renderLeadsList();
+}
+
+function bulkDeleteLeads() {
+  const count = APP.leadsView.selected.size;
+  if (count === 0) return;
+  if (!confirm(`⚠️ سيتم حذف ${count} عميل نهائياً. متأكد؟`)) return;
+  const indicesToDelete = [...APP.leadsView.selected].sort((a, b) => b - a);
+  indicesToDelete.forEach(i => APP.leads.splice(i, 1));
+  APP.leadsView.selected.clear();
+  DB.set('leads', APP.leads);
+  document.getElementById('leadsCount').textContent = APP.leads.length;
+  renderLeadsList();
+  showToast(`🗑️ تم حذف ${count} عميل`, 'success');
+}
+
+function bulkSendCampaign() {
+  const indices = [...APP.leadsView.selected];
+  if (indices.length === 0) return;
+  APP.campaignTargets = indices.map(i => APP.leads[i]);
+  APP.leadsView.selected.clear();
+  openPage('campaigns');
+  startCampaign('email');
+  showToast(`🚀 ${indices.length} عميل جاهز للحملة`, 'success');
+}
+
+function bulkExportSelected() {
+  const indices = [...APP.leadsView.selected];
+  if (indices.length === 0) return;
+  const tempLeads = APP.leads;
+  APP.leads = indices.map(i => tempLeads[i]);
+  exportLeadsCSV();
+  APP.leads = tempLeads;
+}
+
+function viewLeadFromList(idx) {
+  const l = APP.leads[idx];
+  if (!l) return;
+  // Reuse the searchResults modal by temporarily setting the data
+  const tempResults = APP.searchResults;
+  APP.searchResults = APP.leads;
+  viewLead(idx);
+  APP.searchResults = tempResults;
 }
 
 function filterLeadsList(type, btn) {
   document.querySelectorAll('#page-leads .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
+  APP.leadsView.filter = type;
+  APP.leadsView.page = 1;
+  renderLeadsList();
 }
 
 function composeForLead(i) { goCompose(APP.leads[i]); }
@@ -1057,21 +1867,239 @@ ${myContact}`;
 ${myContact}`;
 }
 
+// ============================================================
+// EMAIL PROVIDERS (مزودات إرسال البريد البديلة لـ Gmail)
+// كلها تعمل من المتصفح مباشرة بدون خادم خلفي ولا حظر
+// ============================================================
+const EMAIL_PROVIDERS = {
+  // Resend — الأسهل والأفضل (3000 رسالة مجاناً شهرياً)
+  resend: {
+    name: 'Resend',
+    icon: '📨',
+    free_limit: '3000/شهر',
+    signup: 'https://resend.com/signup',
+    keys_url: 'https://resend.com/api-keys',
+    async send({ apiKey, to, subject, html, from, fromName }) {
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromName ? `${fromName} <${from}>` : from,
+          to: [to],
+          subject: subject,
+          html: html
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.message || 'Resend ' + resp.status);
+      return { ok: true, id: data.id };
+    }
+  },
+
+  // Brevo (Sendinblue سابقاً) — 300 رسالة يومياً مجاناً
+  brevo: {
+    name: 'Brevo',
+    icon: '🦊',
+    free_limit: '300/يوم',
+    signup: 'https://www.brevo.com/free-account/',
+    keys_url: 'https://app.brevo.com/settings/keys/api',
+    async send({ apiKey, to, subject, html, from, fromName }) {
+      const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: fromName || 'MTC', email: from },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.message || 'Brevo ' + resp.status);
+      return { ok: true, id: data.messageId };
+    }
+  },
+
+  // EmailJS — Free 200/شهر — يعمل تماماً من المتصفح
+  emailjs: {
+    name: 'EmailJS',
+    icon: '⚡',
+    free_limit: '200/شهر',
+    signup: 'https://dashboard.emailjs.com/sign-up',
+    keys_url: 'https://dashboard.emailjs.com/admin/account',
+    async send({ apiKey, serviceId, templateId, to, subject, html, from, fromName }) {
+      // EmailJS يحتاج: publicKey + serviceId + templateId
+      const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: serviceId,
+          template_id: templateId,
+          user_id: apiKey,
+          template_params: {
+            to_email: to,
+            from_name: fromName || 'MTC',
+            from_email: from,
+            subject: subject,
+            message: html.replace(/<[^>]+>/g, '\n').replace(/\n+/g, '\n').trim()
+          }
+        })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error('EmailJS ' + resp.status + ': ' + errText.substring(0, 150));
+      }
+      return { ok: true };
+    }
+  },
+
+  // Backend الخلفي (الطريقة الأصلية عبر Gmail SMTP)
+  backend: {
+    name: 'الخادم الخلفي (Gmail)',
+    icon: '🖥️',
+    free_limit: 'حسب Gmail (500/يوم)',
+    async send({ backendUrl, to, body, from, fromName }) {
+      const resp = await fetch(backendUrl.replace(/\/$/, '') + '/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, body, from, fromName })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error('Backend ' + resp.status + ': ' + errText.substring(0, 150));
+      }
+      return { ok: true };
+    }
+  }
+};
+
+// دالة موحّدة لإرسال البريد عبر المزود المختار
+async function sendEmailUnified({ to, body, leadName }) {
+  const provider = APP.config.emailProvider || 'resend';
+  const senderEmail = APP.config.senderEmail || 'noreply@example.com';
+  const senderName = APP.config.senderName || 'MTC';
+
+  // استخراج الموضوع من أول سطر
+  const lines = body.split('\n');
+  let subject = 'بخصوص خدمات شركتنا';
+  let content = body;
+  if (lines[0] && lines[0].includes('الموضوع:')) {
+    subject = lines[0].replace(/الموضوع:/, '').trim();
+    content = lines.slice(1).join('\n').trim();
+  }
+
+  // تحويل النص إلى HTML
+  const html = `<div dir="rtl" style="font-family:'Tahoma',Arial,sans-serif;line-height:1.85;color:#333;max-width:600px;margin:0 auto;padding:20px">
+    ${content.replace(/\n/g, '<br>')}
+  </div>`;
+
+  const params = { to, subject, html, from: senderEmail, fromName: senderName, body, leadName };
+
+  if (provider === 'resend') {
+    params.apiKey = APP.config.resendApiKey;
+    if (!params.apiKey) return { ok: false, error: 'مفتاح Resend غير موجود' };
+  } else if (provider === 'brevo') {
+    params.apiKey = APP.config.brevoApiKey;
+    if (!params.apiKey) return { ok: false, error: 'مفتاح Brevo غير موجود' };
+  } else if (provider === 'emailjs') {
+    params.apiKey = APP.config.emailjsPublicKey;
+    params.serviceId = APP.config.emailjsServiceId;
+    params.templateId = APP.config.emailjsTemplateId;
+    if (!params.apiKey || !params.serviceId || !params.templateId) {
+      return { ok: false, error: 'بيانات EmailJS ناقصة' };
+    }
+  } else if (provider === 'backend') {
+    params.backendUrl = APP.config.backendUrl;
+    if (!params.backendUrl) return { ok: false, error: 'رابط الخادم الخلفي غير موجود' };
+  }
+
+  try {
+    const result = await EMAIL_PROVIDERS[provider].send(params);
+    return { ok: true, result };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// اختبار مزود البريد المختار
+async function testEmailProvider(providerKey) {
+  const statusId = 'status_email_' + providerKey;
+  const statusEl = document.getElementById(statusId);
+  if (!statusEl) return;
+
+  statusEl.innerHTML = '<span style="color:var(--cyan)">⏳ يرسل رسالة اختبار إلى بريدك...</span>';
+
+  // حفظ المفاتيح أولاً
+  saveEmailProviderKeys();
+
+  const testTo = APP.config.senderEmail;
+  if (!testTo) {
+    statusEl.innerHTML = '<span style="color:var(--red)">⚠️ أضف بريد المرسل أولاً</span>';
+    return;
+  }
+
+  // الإرسال للذات (Self-test)
+  const oldProvider = APP.config.emailProvider;
+  APP.config.emailProvider = providerKey;
+
+  const result = await sendEmailUnified({
+    to: testTo,
+    body: `الموضوع: اختبار اتصال ${EMAIL_PROVIDERS[providerKey].name}\n\nمرحباً،\n\nهذه رسالة اختبار للتأكد من نجاح ربط ${EMAIL_PROVIDERS[providerKey].name} بنظام MTC.\n\nإذا وصلتك هذه الرسالة، فالاتصال يعمل بنجاح ✅`,
+    leadName: 'Test'
+  });
+
+  APP.config.emailProvider = oldProvider;
+
+  if (result.ok) {
+    statusEl.innerHTML = `<span style="color:var(--green)">✅ تم الإرسال بنجاح إلى ${escapeHtml(testTo)} — تحقق من صندوق الوارد</span>`;
+    APP.config.emailProvider = providerKey;
+    DB.set('config', APP.config);
+    showToast(`✅ ${EMAIL_PROVIDERS[providerKey].name} يعمل!`, 'success');
+  } else {
+    statusEl.innerHTML = `<span style="color:var(--red)">❌ فشل: ${escapeHtml((result.error || '').substring(0, 120))}</span>`;
+    showToast('❌ فشل اختبار ' + EMAIL_PROVIDERS[providerKey].name, 'error');
+  }
+}
+
+function saveEmailProviderKeys() {
+  APP.config.resendApiKey = document.getElementById('resendApiKey')?.value.trim() || '';
+  APP.config.brevoApiKey = document.getElementById('brevoApiKey')?.value.trim() || '';
+  APP.config.emailjsPublicKey = document.getElementById('emailjsPublicKey')?.value.trim() || '';
+  APP.config.emailjsServiceId = document.getElementById('emailjsServiceId')?.value.trim() || '';
+  APP.config.emailjsTemplateId = document.getElementById('emailjsTemplateId')?.value.trim() || '';
+  DB.set('config', APP.config);
+}
+
+function selectEmailProvider(key) {
+  APP.config.emailProvider = key;
+  DB.set('config', APP.config);
+  document.querySelectorAll('.email-provider-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('email_card_' + key)?.classList.add('selected');
+  showToast(`✓ ${EMAIL_PROVIDERS[key].name} مفعّل كمزود البريد`, 'success');
+}
+
 async function sendEmailSingle() {
   const to = document.getElementById('recipientEmail').value.trim();
   if (!to) { showToast('⚠️ أدخل البريد المستلم', 'error'); return; }
-  const backend = APP.config.backendUrl;
-  if (!backend) { showToast('⚠️ اربط الخادم الخلفي في الإعدادات', 'error'); return; }
   const msg = document.getElementById('msgPreview').textContent;
-  showToast('📤 جاري الإرسال...');
-  try {
-    const r = await fetch(backend.replace(/\/$/, '') + '/api/send', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to, body: msg, from: APP.config.senderEmail, fromName: APP.config.senderName })
-    });
-    if (r.ok) showToast('✅ تم الإرسال', 'success');
-    else showToast('⚠️ فشل الإرسال', 'error');
-  } catch (e) { showToast('⚠️ تعذّر الاتصال بالخادم', 'error'); }
+  if (!APP.config.emailProvider) {
+    showToast('⚠️ اختر مزود البريد من الإعدادات', 'error');
+    return;
+  }
+  showToast('📤 جاري الإرسال عبر ' + EMAIL_PROVIDERS[APP.config.emailProvider].name + '...');
+  const result = await sendEmailUnified({ to, body: msg, leadName: '' });
+  if (result.ok) {
+    showToast('✅ تم الإرسال بنجاح', 'success');
+  } else {
+    showToast('❌ ' + (result.error || 'فشل الإرسال').substring(0, 80), 'error');
+  }
 }
 
 function copyMsg() {
@@ -1116,7 +2144,6 @@ async function executeCampaign() {
   const btn = document.getElementById('execBtn');
   btn.disabled = true;
   const [mn, mx] = document.getElementById('delayBetween').value.split('-').map(Number);
-  const backend = APP.config.backendUrl;
   const mode = APP.campaignMode;
   let done = 0;
   for (let idx = 0; idx < targets.length; idx++) {
@@ -1144,15 +2171,15 @@ async function executeCampaign() {
     el.querySelector('.tag').textContent = mode === 'wa' ? 'يفتح واتساب...' : 'يُرسل...';
     let success = true;
     if (mode === 'email') {
-      if (backend) {
-        try {
-          const res = await fetch(backend.replace(/\/$/, '') + '/api/send', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: l.email, body: personalizedMsg, from: APP.config.senderEmail, fromName: APP.config.senderName, leadName: l.name })
-          });
-          success = res.ok;
-        } catch (e) { success = false; }
-      } else { await sleep(700); }
+      if (APP.config.emailProvider) {
+        const result = await sendEmailUnified({ to: l.email, body: personalizedMsg, leadName: l.name });
+        success = result.ok;
+        if (!result.ok) {
+          el.querySelector('.sp-sub').textContent += ' · ' + (result.error || '').substring(0, 40);
+        }
+      } else {
+        await sleep(700); // وضع المحاكاة
+      }
     } else {
       const msgClean = personalizedMsg.replace(/^الموضوع:.*\n+/i, '');
       const phone = normalizePhone(l.phone);
@@ -1205,26 +2232,133 @@ function renderPastCampaigns() {
 }
 
 // ============ INBOX ============
-function renderInbox() {
-  if (APP.inbox.length === 0) {
-    APP.inbox = [
-      { id: 1, from: 'مجموعة بن لادن السعودية', email: 'procurement@sbg.com.sa', subject: 'رد: حلول النقل الثقيل', preview: 'شكراً للتواصل، يرجى إرسال عرض سعر...', time: 'منذ ساعتين', unread: true, body: 'السادة شركة محمد للنقليات،\n\nاطلعنا على خدماتكم ونودّ عرض سعر مفصّل.\n\nإدارة المشتريات' },
-      { id: 2, from: 'شركة أرامكو', email: 'transport@aramco.com', subject: 'استفسار', preview: 'نود الاستفسار...', time: 'أمس', unread: true, body: 'نود الاستفسار عن نقل الأنابيب في المنطقة الشرقية.' },
-      { id: 3, from: 'مجموعة نقوا', email: 'logistics@naqua.com.sa', subject: 'Re: شراكة', preview: 'نحن مهتمون...', time: 'منذ 3 أيام', unread: false, body: 'نحن مهتمون بالتعاون. هل يمكن ترتيب اجتماع؟' }
-    ];
+async function fetchInbox() {
+  const backendUrl = APP.config.backendUrl;
+  const provider = APP.config.emailProvider;
+
+  // إذا لا يوجد خادم خلفي مربوط، اعرض رسالة
+  if (!backendUrl) {
+    document.getElementById('inboxList').innerHTML = `
+      <div class="info-box info-gold" style="margin:0">
+        <div class="ib-title">📥 لاستقبال الردود الفعلية</div>
+        <div style="line-height:1.9">
+          تحتاج خادماً خلفياً (Node.js) لربط IMAP بصندوق بريدك. الخادم يقرأ الردود الواردة على بريدك ويعرضها هنا.
+          <br><br>
+          <b>الخطوات:</b><br>
+          1. انشر ملف server.js على Render (دليل النشر مُرفق)<br>
+          2. أضف رابط الخادم في الإعدادات → الخادم الخلفي<br>
+          3. اضغط 🔄 تحديث صندوق الوارد
+        </div>
+        <button class="btn-primary" style="margin-top:14px" onclick="openPage('settings')">⚙️ ربط الخادم</button>
+      </div>`;
+    document.getElementById('inboxCount').textContent = '';
+    return;
   }
+
+  document.getElementById('inboxList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--cyan)">⏳ جاري تحميل الوارد من الخادم...</div>';
+
+  try {
+    const resp = await fetch(backendUrl.replace(/\/$/, '') + '/api/inbox');
+    if (!resp.ok) throw new Error('فشل الاتصال بالخادم: ' + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    // البريد القادم من الخادم
+    let rawInbox = Array.isArray(data) ? data : (data.messages || []);
+
+    // التصفية: فقط الردود من العملاء الذين أرسلنا لهم
+    const sentToEmails = new Set(APP.leads
+      .filter(l => l.status === 'sent' || l.status === 'opened' || l.status === 'replied')
+      .map(l => l.email?.toLowerCase().trim())
+      .filter(Boolean));
+
+    APP.inbox = rawInbox.map((msg, idx) => {
+      // استخراج الإيميل من حقل from "Name <email@x.com>"
+      const fromRaw = msg.from?.[0] || msg.from || '';
+      const emailMatch = String(fromRaw).match(/<([^>]+)>/) || String(fromRaw).match(/(\S+@\S+\.\S+)/);
+      const senderEmail = emailMatch ? emailMatch[1].toLowerCase().trim() : '';
+      const senderName = String(fromRaw).replace(/<[^>]+>/, '').trim() || senderEmail;
+
+      // معرفة هل هذا رد من عميل أرسلنا له
+      const isFromOurLead = sentToEmails.has(senderEmail);
+      const matchingLead = APP.leads.find(l => l.email?.toLowerCase().trim() === senderEmail);
+
+      return {
+        id: idx,
+        from: matchingLead?.name || senderName,
+        email: senderEmail,
+        subject: msg.subject?.[0] || msg.subject || '(بدون عنوان)',
+        preview: msg.preview || msg.snippet || '...',
+        body: msg.body || msg.snippet || msg.preview || '',
+        time: msg.date?.[0] || msg.date || 'الآن',
+        unread: msg.unread !== false,
+        isFromLead: isFromOurLead,
+        leadName: matchingLead?.name
+      };
+    });
+
+    // التصفية: عرض فقط الردود من العملاء المرسل لهم
+    const filterOnlySent = APP.config.inboxFilterOnlySent !== false; // افتراضياً مفعّل
+    const filtered = filterOnlySent ? APP.inbox.filter(m => m.isFromLead) : APP.inbox;
+
+    renderInboxList(filtered);
+    document.getElementById('inboxCount').textContent = filtered.filter(m => m.unread).length || '';
+
+  } catch (e) {
+    document.getElementById('inboxList').innerHTML = `
+      <div class="info-box info-red" style="margin:0">
+        <div class="ib-title">⚠️ تعذّر جلب الوارد</div>
+        <div>${escapeHtml(e.message)}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:10px">
+          تأكد من أن الخادم يعمل وأن متغيرات SMTP_USER و SMTP_PASS صحيحة في Render.
+        </div>
+      </div>`;
+  }
+}
+
+function renderInboxList(messages) {
   const list = document.getElementById('inboxList');
-  list.innerHTML = APP.inbox.map((m, i) => `
+  if (!messages || messages.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state" style="padding:30px">
+        <div class="icon">📭</div>
+        <p>لا توجد ردود من العملاء بعد</p>
+        <p style="font-size:11px;color:var(--text-dim);margin-top:8px">
+          سيظهر هنا الردود من العملاء الذين أرسلنا لهم بريداً
+        </p>
+        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn-sm btn-view" onclick="fetchInbox()">🔄 تحديث</button>
+          <button class="btn-sm btn-outline" onclick="toggleInboxFilter()">${APP.config.inboxFilterOnlySent !== false ? '👁️ عرض كل الوارد' : '🎯 فقط ردود العملاء'}</button>
+        </div>
+      </div>`;
+    return;
+  }
+  list.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn-sm btn-view" onclick="fetchInbox()">🔄 تحديث</button>
+      <button class="btn-sm btn-outline" onclick="toggleInboxFilter()">${APP.config.inboxFilterOnlySent !== false ? '👁️ عرض الكل' : '🎯 فقط العملاء'}</button>
+      <span style="font-size:11px;color:var(--text-dim);align-self:center;margin-right:auto">${messages.length} رسالة</span>
+    </div>
+    ${messages.map((m, i) => `
     <div class="inbox-item ${m.unread ? 'unread' : ''}" onclick="openInboxMsg(${i})">
-      <div class="inbox-avatar">${m.unread ? '📬' : '📭'}</div>
+      <div class="inbox-avatar">${m.isFromLead ? '🎯' : m.unread ? '📬' : '📭'}</div>
       <div class="inbox-meta">
         <div class="inbox-sender">${escapeHtml(m.from)}</div>
         <div class="inbox-subject">${escapeHtml(m.subject)}</div>
         <div class="inbox-preview">${escapeHtml(m.preview)}</div>
       </div>
       <div class="inbox-time">${escapeHtml(m.time)}</div>
-    </div>`).join('');
-  document.getElementById('inboxCount').textContent = APP.inbox.filter(m => m.unread).length || '';
+    </div>`).join('')}`;
+}
+
+function toggleInboxFilter() {
+  APP.config.inboxFilterOnlySent = !(APP.config.inboxFilterOnlySent !== false);
+  DB.set('config', APP.config);
+  fetchInbox();
+}
+
+function renderInbox() {
+  fetchInbox();
 }
 
 function openInboxMsg(i) {
@@ -1449,6 +2583,7 @@ async function testProvider(pid) {
   const params = { apiKey, model: modelInput?.value, messages: [{ role: 'user', content: 'قل "متصل" فقط' }], maxTokens: 20 };
   if (pid === 'anthropic') params.proxy = document.getElementById('key_anthropic_proxy')?.value.trim();
   if (pid === 'custom') params.baseUrl = document.getElementById('key_custom_url')?.value.trim();
+  if (pid === 'manus') params.baseUrl = document.getElementById('key_manus_url')?.value.trim();
   try {
     const text = await PROVIDERS[pid].call(params);
     if (text) {
@@ -1472,7 +2607,7 @@ async function testProvider(pid) {
 }
 
 function saveAllProviders() {
-  const providers = ['groq', 'openrouter', 'gemini', 'mistral', 'anthropic', 'custom'];
+  const providers = ['groq', 'openrouter', 'gemini', 'mistral', 'anthropic', 'manus', 'custom'];
   for (const pid of providers) {
     const key = document.getElementById('key_' + pid)?.value.trim();
     const model = document.getElementById('model_' + pid)?.value;
@@ -1481,6 +2616,7 @@ function saveAllProviders() {
   }
   APP.config.key_anthropic_proxy = document.getElementById('key_anthropic_proxy')?.value.trim() || '';
   APP.config.key_custom_url = document.getElementById('key_custom_url')?.value.trim() || '';
+  APP.config.key_manus_url = document.getElementById('key_manus_url')?.value.trim() || '';
   DB.set('config', APP.config);
   const hasAnyKey = providers.some(p => APP.config['key_' + p] && APP.config['key_' + p].length > 10);
   updateApiStatus(hasAnyKey);
@@ -1503,18 +2639,62 @@ async function saveBackend() {
   APP.config.senderName = document.getElementById('senderName').value.trim();
   APP.config.senderEmail = document.getElementById('senderEmail').value.trim();
   DB.set('config', APP.config);
-  if (!APP.config.backendUrl) {
-    document.getElementById('backendStatus').innerHTML = '<span style="color:var(--orange)">حُفظ — بدون خادم لا يوجد إرسال فعلي</span>';
+  document.getElementById('backendStatus').innerHTML = '<span style="color:var(--green)">✅ تم حفظ بيانات المرسل</span>';
+  showToast('✅ تم حفظ بيانات المرسل', 'success');
+}
+
+// اختبار البريد المرسل: يرسل رسالة اختبار لنفس البريد
+async function testSenderEmail() {
+  const senderEmail = document.getElementById('senderEmail').value.trim();
+  const senderName = document.getElementById('senderName').value.trim() || 'MTC Sales';
+  const statusEl = document.getElementById('backendStatus');
+
+  if (!senderEmail || !senderEmail.includes('@')) {
+    statusEl.innerHTML = '<span style="color:var(--red)">⚠️ أدخل بريداً صحيحاً أولاً</span>';
     return;
   }
-  document.getElementById('backendStatus').innerHTML = '<span style="color:var(--cyan)">⏳ يختبر...</span>';
-  try {
-    const r = await fetch(APP.config.backendUrl.replace(/\/$/, '') + '/api/health');
-    document.getElementById('backendStatus').innerHTML = r.ok
-      ? '<span style="color:var(--green)">✅ الخادم متصل</span>'
-      : '<span style="color:var(--orange)">⚠️ لا يستجيب</span>';
-  } catch (e) {
-    document.getElementById('backendStatus').innerHTML = '<span style="color:var(--orange)">⚠️ تعذّر الوصول</span>';
+
+  if (!APP.config.emailProvider) {
+    statusEl.innerHTML = '<span style="color:var(--orange)">⚠️ اختر مزود بريد أولاً ثم أضف مفتاحه</span>';
+    return;
+  }
+
+  // حفظ البيانات قبل الاختبار
+  APP.config.senderEmail = senderEmail;
+  APP.config.senderName = senderName;
+  DB.set('config', APP.config);
+
+  statusEl.innerHTML = `<span style="color:var(--cyan)">⏳ يرسل اختبار من ${escapeHtml(senderEmail)} → ${escapeHtml(senderEmail)} عبر ${EMAIL_PROVIDERS[APP.config.emailProvider].name}...</span>`;
+
+  const now = new Date().toLocaleString('ar-SA');
+  const testBody = `الموضوع: ✅ اختبار بريد المرسل - ${EMAIL_PROVIDERS[APP.config.emailProvider].name}
+
+السلام عليكم،
+
+هذه رسالة اختبار تلقائية من نظام MTC Sales Platform.
+
+تفاصيل الاختبار:
+• المرسل: ${senderName}
+• البريد: ${senderEmail}
+• المزود: ${EMAIL_PROVIDERS[APP.config.emailProvider].name}
+• الوقت: ${now}
+
+✅ إذا وصلتك هذه الرسالة، فبريد المرسل يعمل بشكل صحيح ويمكنك الآن إرسال الرسائل للعملاء.
+
+شكراً.`;
+
+  const result = await sendEmailUnified({
+    to: senderEmail,
+    body: testBody,
+    leadName: 'Self Test'
+  });
+
+  if (result.ok) {
+    statusEl.innerHTML = `<span style="color:var(--green)">✅ تم الإرسال بنجاح! تحقق من صندوق وارد ${escapeHtml(senderEmail)} (قد تستغرق دقيقة)</span>`;
+    showToast('✅ بريد المرسل يعمل!', 'success');
+  } else {
+    statusEl.innerHTML = `<span style="color:var(--red)">❌ فشل: ${escapeHtml((result.error || '').substring(0, 150))}</span>`;
+    showToast('❌ فشل اختبار البريد', 'error');
   }
 }
 
@@ -1534,22 +2714,566 @@ function saveCompanyData() {
 }
 
 function exportData() {
-  const all = { config: APP.config, leads: APP.leads, inbox: APP.inbox, campaigns: APP.campaigns };
+  const all = {
+    version: '7.0',
+    exported_at: new Date().toISOString(),
+    config: APP.config,
+    leads: APP.leads,
+    inbox: APP.inbox,
+    campaigns: APP.campaigns,
+    workingProviders: APP.workingProviders
+  };
   const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'mtc-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.download = `mtc-backup-${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  showToast('📥 تم التصدير', 'success');
+  showToast('📥 تم تصدير النسخة الاحتياطية', 'success');
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data.config) throw new Error('ملف غير صالح');
+
+      if (!confirm(`سيتم استبدال البيانات الحالية:\n• ${(data.leads || []).length} عميل\n• ${(data.campaigns || []).length} حملة\n• ${Object.keys(data.config || {}).length} إعداد\n\nالاستمرار؟`)) return;
+
+      APP.config = data.config || {};
+      APP.leads = data.leads || [];
+      APP.inbox = data.inbox || [];
+      APP.campaigns = data.campaigns || [];
+      APP.workingProviders = data.workingProviders || {};
+
+      DB.set('config', APP.config);
+      DB.set('leads', APP.leads);
+      DB.set('inbox', APP.inbox);
+      DB.set('campaigns', APP.campaigns);
+
+      showToast('✅ تم استيراد النسخة الاحتياطية', 'success');
+      setTimeout(() => location.reload(), 1000);
+    } catch (err) {
+      showToast('❌ ملف غير صالح: ' + err.message, 'error');
+    }
+  };
+  input.click();
+}
+
+// ============ استيراد قائمة عملاء (CSV/JSON/TXT) ============
+function importLeadsFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,.json,.txt';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      let imported = [];
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === 'json') {
+        // قائمة JSON
+        const data = JSON.parse(text);
+        const arr = Array.isArray(data) ? data : (data.leads || []);
+        imported = arr.map(l => normalizeImportedLead(l));
+      } else if (ext === 'csv') {
+        // CSV: السطر الأول رؤوس
+        imported = parseCSV(text);
+      } else {
+        // TXT: كل سطر إيميل أو رقم
+        imported = parseTextList(text);
+      }
+
+      imported = imported.filter(l => l.name || l.email || l.phone);
+
+      if (imported.length === 0) {
+        showToast('⚠️ لم يتم العثور على عملاء صالحين في الملف', 'error');
+        return;
+      }
+
+      // عرض معاينة قبل الإضافة
+      showImportPreview(imported);
+    } catch (err) {
+      showToast('❌ خطأ في قراءة الملف: ' + err.message, 'error');
+    }
+  };
+  input.click();
+}
+
+function normalizeImportedLead(l) {
+  // Normalize hot_lead: accepts True/False/true/false/yes/no/نعم/لا/1/0
+  const parseBoolean = (v) => {
+    if (typeof v === 'boolean') return v;
+    const s = String(v || '').toLowerCase().trim();
+    return ['true', 'yes', 'نعم', '1', 'حار', 'hot', 'y'].includes(s);
+  };
+
+  // Parse priority — accepts Arabic or English
+  const rawPriority = (l.priority || l['الأولوية'] || l['اولوية'] || '').toString().trim();
+  let priority = 'عادية';
+  if (/عالية\s*جدا|very\s*high|critical/i.test(rawPriority)) priority = 'عالية جداً';
+  else if (/عالية|high/i.test(rawPriority)) priority = 'عالية';
+  else if (/متوسطة|medium|mid/i.test(rawPriority)) priority = 'متوسطة';
+  else if (/منخفضة|low/i.test(rawPriority)) priority = 'منخفضة';
+  else if (rawPriority) priority = rawPriority;
+
+  const origin = (l.company_origin || l['الجنسية'] || l['أصل الشركة'] || l['origin'] || '').toString().trim() || 'غير محدد';
+
+  return {
+    name: l.name || l['الاسم'] || l['الشركة'] || l['اسم الشركة'] || l['اسم'] || '',
+    name_en: l.name_en || l['English Name'] || l['name_english'] || '',
+    entity_type: l.entity_type || l['النوع'] || l['نوع'] || 'شركة',
+    sector: l.sector || l['القطاع'] || l['المجال'] || 'غير محدد',
+    city: l.city || l['المدينة'] || l['المنطقة'] || '',
+    email: (l.email || l['الإيميل'] || l['البريد'] || l['Email'] || '').toString().trim().toLowerCase(),
+    email_source: l.email_source || l['مصدر الإيميل'] || 'مستورد من ملف',
+    email_confidence: parseInt(l.email_confidence || l['ثقة الإيميل %'] || (l.email ? 100 : 0)) || 0,
+    phone: (l.phone || l['الهاتف'] || l['الرقم'] || l['الجوال'] || l['Phone'] || '').toString().trim(),
+    phone_source: l.phone_source || l['مصدر الهاتف'] || 'مستورد من ملف',
+    phone_confidence: parseInt(l.phone_confidence || l['ثقة الهاتف %'] || (l.phone ? 100 : 0)) || 0,
+    website: l.website || l['الموقع'] || l['الموقع الإلكتروني'] || '',
+    linkedin: l.linkedin || l['LinkedIn'] || '',
+    instagram: l.instagram || l['Instagram'] || '',
+    score: parseInt(l.score || l.interest_score || l['الاهتمام'] || l['الاهتمام %']) || 70,
+    signal: l.signal || l['الإشارة'] || l['ملاحظة'] || '',
+    signal_date: l.signal_date || l['تاريخ الإشارة'] || new Date().toISOString().split('T')[0],
+    signal_source_url: l.signal_source_url || '',
+    source: l.source || l['المصدر'] || 'استيراد ملف',
+    reason: l.reason || l['السبب'] || l['سبب الترشيح'] || '',
+    // Extended fields
+    hot_lead: parseBoolean(l.hot_lead || l['عميل حار'] || l['hot']),
+    priority: priority,
+    contract_probability: parseInt(l.contract_probability || l['احتمالية التعاقد'] || l['احتمال التعاقد %']) || 0,
+    company_origin: origin,
+    // Status fields
+    status: l.status || 'pending',
+    last: '—',
+    real: true,
+    imported: true,
+    addedAt: l.addedAt || Date.now()
+  };
+}
+
+function parseCSV(text) {
+  // Remove BOM if present
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.replace(/\r\n/g, '\n').split('\n').filter(l => l.trim());
+  if (lines.length === 0) return [];
+
+  // Smart CSV parser handling quotes (RFC 4180)
+  const parseRow = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += c;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  // Handle multi-line CSV with quoted newlines
+  const rows = [];
+  let buffer = '';
+  let openQuotes = 0;
+  for (const line of lines) {
+    buffer += (buffer ? '\n' : '') + line;
+    // Count unescaped quotes
+    const quoteCount = (line.match(/"/g) || []).length;
+    openQuotes = (openQuotes + quoteCount) % 2;
+    if (openQuotes === 0) {
+      rows.push(buffer);
+      buffer = '';
+    }
+  }
+  if (buffer) rows.push(buffer);
+
+  if (rows.length === 0) return [];
+
+  const rawHeaders = parseRow(rows[0]);
+  const leads = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const values = parseRow(rows[i]);
+    if (values.every(v => !v)) continue; // Skip empty rows
+    const obj = {};
+    rawHeaders.forEach((h, idx) => {
+      const value = values[idx] !== undefined ? values[idx] : '';
+      obj[h] = value;
+      obj[h.toLowerCase()] = value;
+      obj[h.trim()] = value;
+    });
+    leads.push(normalizeImportedLead(obj));
+  }
+  return leads;
+}
+
+function parseTextList(text) {
+  // كل سطر: إيميل أو رقم أو "اسم,إيميل,رقم"
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  return lines.map(line => {
+    const parts = line.split(/[,;\t]/).map(p => p.trim());
+    const emailRe = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+    const phoneRe = /\+?[\d\s\-()]{8,}/;
+
+    let email = '', phone = '', name = '';
+    parts.forEach(p => {
+      if (emailRe.test(p) && !email) email = p.match(emailRe)[0];
+      else if (phoneRe.test(p) && !phone) phone = p;
+      else if (!name && p.length > 1) name = p;
+    });
+
+    if (!name && email) name = email.split('@')[0];
+    if (!name && phone) name = 'جهة اتصال ' + phone.slice(-4);
+
+    return normalizeImportedLead({ name, email, phone });
+  }).filter(l => l.email || l.phone);
+}
+
+function showImportPreview(imported) {
+  const modal = document.getElementById('leadModal');
+  document.getElementById('modalTitle').innerHTML = `معاينة <span>الاستيراد</span> · ${imported.length} عميل`;
+
+  const sample = imported.slice(0, 6);
+  const previewHtml = sample.map((l) => `
+    <tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:8px;font-size:12px">
+        ${l.hot_lead ? '🔥 ' : ''}${escapeHtml(l.name || '—')}
+        <div style="font-size:10px;color:var(--text-dim)">${escapeHtml(l.sector || '')}</div>
+      </td>
+      <td style="padding:8px;font-size:11px;direction:ltr;color:var(--cyan)">${escapeHtml(l.email || '—')}</td>
+      <td style="padding:8px;font-size:11px;direction:ltr">${escapeHtml(l.phone || '—')}</td>
+      <td style="padding:8px;font-size:11px">${escapeHtml(l.city || '—')}</td>
+      <td style="padding:8px;font-size:11px;color:var(--gold)">${escapeHtml(l.priority || '—')}</td>
+    </tr>`).join('');
+
+  const validCount = imported.filter(l => l.email || l.phone).length;
+  const duplicates = imported.filter(l => APP.leads.some(existing =>
+    (existing.email && existing.email === l.email && l.email) ||
+    (existing.phone && existing.phone === l.phone && l.phone)
+  )).length;
+
+  // Statistics
+  const hotLeads = imported.filter(l => l.hot_lead).length;
+  const veryHighPrio = imported.filter(l => l.priority === 'عالية جداً').length;
+  const highPrio = imported.filter(l => l.priority === 'عالية').length;
+  const avgContractProb = Math.round(imported.reduce((s, l) => s + (l.contract_probability || 0), 0) / imported.length);
+  const saudiCount = imported.filter(l => l.company_origin === 'سعودية').length;
+  const foreignCount = imported.filter(l => l.company_origin === 'أجنبية').length;
+
+  // Detect column mapping
+  const sampleKeys = imported[0] ? Object.keys(imported[0]).filter(k => imported[0][k] && k !== 'addedAt' && k !== 'real' && k !== 'imported') : [];
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="info-box info-green" style="margin-bottom:14px">
+      <div class="ib-title">✅ ملخص الاستيراد</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px">
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--gold)">${imported.length}</div>
+          <div style="font-size:10px;color:var(--text-dim)">إجمالي</div>
+        </div>
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--green)">${imported.length - duplicates}</div>
+          <div style="font-size:10px;color:var(--text-dim)">جديد</div>
+        </div>
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--orange)">${duplicates}</div>
+          <div style="font-size:10px;color:var(--text-dim)">مكرر</div>
+        </div>
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--red)">🔥 ${hotLeads}</div>
+          <div style="font-size:10px;color:var(--text-dim)">عميل حار</div>
+        </div>
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--purple)">⭐ ${veryHighPrio + highPrio}</div>
+          <div style="font-size:10px;color:var(--text-dim)">أولوية عالية</div>
+        </div>
+        <div style="background:rgba(10,26,51,0.5);padding:8px;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--cyan)">${avgContractProb}%</div>
+          <div style="font-size:10px;color:var(--text-dim)">متوسط احتمال التعاقد</div>
+        </div>
+      </div>
+      ${(saudiCount > 0 || foreignCount > 0) ? `
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        ${saudiCount ? `<span class="tag tag-real">🇸🇦 سعودية: ${saudiCount}</span>` : ''}
+        ${foreignCount ? `<span class="tag tag-info">🌍 أجنبية: ${foreignCount}</span>` : ''}
+      </div>` : ''}
+    </div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">عيّنة من النتائج (أول 6):</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--gold-dim)">
+          <th style="padding:8px;font-size:11px;text-align:right">الاسم/القطاع</th>
+          <th style="padding:8px;font-size:11px;text-align:right">الإيميل</th>
+          <th style="padding:8px;font-size:11px;text-align:right">الهاتف</th>
+          <th style="padding:8px;font-size:11px;text-align:right">المدينة</th>
+          <th style="padding:8px;font-size:11px;text-align:right">الأولوية</th>
+        </tr></thead>
+        <tbody>${previewHtml}</tbody>
+      </table>
+    </div>
+
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:12px;color:var(--text-dim);padding:6px 0">📋 الأعمدة المكتشفة (${sampleKeys.length})</summary>
+      <div style="font-size:11px;color:var(--text-dim);padding:8px;background:rgba(10,26,51,0.5);border-radius:6px;line-height:1.8;direction:ltr;text-align:left">
+        ${sampleKeys.join(' · ')}
+      </div>
+    </details>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <button class="btn-primary" onclick="confirmImportLeads(true)" style="flex:1;min-width:200px">
+        ✓ إضافة ${imported.length - duplicates} عميل جديد ${duplicates > 0 ? '(تخطي المكرر)' : ''}
+      </button>
+      ${duplicates > 0 ? `<button class="btn-outline" onclick="confirmImportLeadsAll()" style="flex:1;min-width:140px">إضافة الكل (${imported.length})</button>` : ''}
+      <button class="btn-outline" onclick="closeModal('leadModal')" style="min-width:80px">إلغاء</button>
+    </div>`;
+
+  APP._importedLeads = imported;
+  modal.classList.add('open');
+}
+
+function confirmImportLeads(skipDupes) {
+  if (!APP._importedLeads) return;
+  let added = 0;
+  APP._importedLeads.forEach(l => {
+    const isDup = APP.leads.some(existing =>
+      (existing.email && existing.email === l.email) ||
+      (existing.phone && existing.phone === l.phone)
+    );
+    if (!isDup || !skipDupes) {
+      APP.leads.push(l);
+      added++;
+    }
+  });
+  DB.set('leads', APP.leads);
+  document.getElementById('leadsCount').textContent = APP.leads.length;
+  closeModal('leadModal');
+  showToast(`✅ تم إضافة ${added} عميل لقائمتك`, 'success');
+  if (typeof renderLeadsList === 'function') renderLeadsList();
+  openPage('leads');
+  delete APP._importedLeads;
+}
+
+function confirmImportLeadsAll() { confirmImportLeads(false); }
+
+// ============ تصدير قائمة العملاء (CSV/JSON) ============
+function exportLeadsCSV() {
+  if (APP.leads.length === 0) { showToast('⚠️ لا يوجد عملاء للتصدير', 'error'); return; }
+
+  const headers = ['name', 'name_en', 'entity_type', 'sector', 'city', 'email', 'email_source', 'email_confidence',
+    'phone', 'phone_source', 'phone_confidence', 'website', 'linkedin', 'instagram',
+    'interest_score', 'status', 'signal', 'signal_date', 'signal_source_url', 'source', 'reason',
+    'hot_lead', 'priority', 'contract_probability', 'company_origin'];
+
+  const escapeCsv = (val) => {
+    const s = String(val == null ? '' : val);
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  };
+
+  const rows = APP.leads.map(l => headers.map(h => {
+    let v = l[h];
+    if (h === 'interest_score') v = l.score;
+    return escapeCsv(v);
+  }).join(','));
+
+  // BOM for Excel to read Arabic correctly
+  const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mtc-leads-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast(`📥 تم تصدير ${APP.leads.length} عميل (CSV)`, 'success');
+}
+
+function exportLeadsJSON() {
+  if (APP.leads.length === 0) { showToast('⚠️ لا يوجد عملاء للتصدير', 'error'); return; }
+  const blob = new Blob([JSON.stringify(APP.leads, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mtc-leads-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast(`📥 تم تصدير ${APP.leads.length} عميل (JSON)`, 'success');
+}
+
+function downloadCsvTemplate() {
+  const headers = 'name,name_en,sector,city,email,email_source,email_confidence,phone,phone_source,phone_confidence,website,linkedin,interest_score,signal,signal_date,source,reason,hot_lead,priority,contract_probability,company_origin';
+  const sample = '\uFEFF' + headers + '\n' +
+    'شركة المثال للمقاولات,Example Construction,Construction,الرياض,info@example.sa,official website,85,+966501234567,official website,90,https://example.sa,https://linkedin.com/company/example,80,بدأت مشاريع جديدة في 2026,2026-01-15,https://example.sa,تحتاج خدمات النقل الثقيل,True,عالية,75,سعودية\n' +
+    'متجر النموذج الإلكتروني,Demo Store,E-commerce,جدة,contact@demo.com,LinkedIn page,75,+966555555555,WhatsApp business,80,https://demo.com,,70,تتوسع في عدة مدن,2026-02-01,Google,تحتاج لوجستيات شحن,False,متوسطة,50,سعودية';
+
+  const blob = new Blob([sample], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mtc-leads-template.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast('📥 تم تحميل قالب CSV', 'success');
 }
 
 function clearAllData() {
-  if (!confirm('سيتم مسح جميع البيانات والمفاتيح. متأكد؟')) return;
+  if (!confirm('⚠️ سيتم مسح كل شيء (المفاتيح، العملاء، الحملات). متأكد؟')) return;
+  if (!confirm('تأكيد أخير: هذا الإجراء لا يمكن التراجع عنه!')) return;
   DB.clear();
-  APP.config = {}; APP.leads = []; APP.inbox = []; APP.campaigns = [];
-  showToast('🗑️ تم المسح');
+  APP.config = {}; APP.leads = []; APP.inbox = []; APP.campaigns = []; APP.workingProviders = {};
+  showToast('🗑️ تم مسح كل البيانات');
   setTimeout(() => location.reload(), 800);
+}
+
+// ============ SEARCH PROVIDERS MANAGEMENT ============
+async function testSearchProvider(pid) {
+  const keyInput = document.getElementById('searchKey_' + pid);
+  const statusEl = document.getElementById('status_search_' + pid);
+  const apiKey = keyInput?.value.trim();
+  if (!apiKey) {
+    statusEl.innerHTML = '<span style="color:var(--red)">⚠️ أدخل المفتاح أولاً</span>';
+    return;
+  }
+  statusEl.innerHTML = '<span style="color:var(--cyan)">⏳ يختبر البحث...</span>';
+  try {
+    const results = await SEARCH_PROVIDERS[pid].search({
+      apiKey, query: 'شركات السعودية', timeRange: 'month', maxResults: 3
+    });
+    if (results && results.length > 0) {
+      statusEl.innerHTML = `<span style="color:var(--green)">✅ متصل — ${results.length} نتيجة من اختبار</span>`;
+      APP.config['searchKey_' + pid] = apiKey;
+      DB.set('config', APP.config);
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--orange)">⚠️ لا توجد نتائج (لكن الاتصال يعمل)</span>';
+      APP.config['searchKey_' + pid] = apiKey;
+      DB.set('config', APP.config);
+    }
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:var(--red)">❌ ${escapeHtml(String(e.message).substring(0, 120))}</span>`;
+  }
+}
+
+function selectSearchProvider(pid) {
+  const key = document.getElementById('searchKey_' + pid)?.value.trim();
+  if (key) APP.config['searchKey_' + pid] = key;
+  APP.config.searchProvider = pid;
+  DB.set('config', APP.config);
+  document.querySelectorAll('[id^="search_card_"]').forEach(c => c.classList.remove('active'));
+  document.getElementById('search_card_' + pid)?.classList.add('active');
+  showToast(`✓ ${SEARCH_PROVIDERS[pid].name} مفعّل للبحث`, 'success');
+}
+
+function saveHunterKey() {
+  const key = document.getElementById('hunterApiKey')?.value.trim();
+  APP.config.hunterApiKey = key || '';
+  DB.set('config', APP.config);
+  const statusEl = document.getElementById('status_hunter');
+  if (key) {
+    statusEl.innerHTML = '<span style="color:var(--green)">✅ تم الحفظ — سيُستخدم تلقائياً في البحث</span>';
+    showToast('✅ مفتاح Hunter محفوظ', 'success');
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--text-dim)">تم المسح</span>';
+  }
+}
+
+// ============ إعادة تعيين الأقسام (Section Reset) ============
+function resetSection(section) {
+  const labels = {
+    leads: 'قائمة العملاء والنتائج',
+    search: 'فلاتر البحث',
+    campaigns: 'الحملات السابقة',
+    inbox: 'صندوق الوارد',
+    prompts: 'البرومبتات (استعادة الافتراضية)',
+    providers_status: 'حالة المزودين (للاختبار من جديد)'
+  };
+
+  if (!confirm(`إعادة تعيين: ${labels[section]}؟\nالإعدادات والمفاتيح ستبقى محفوظة.`)) return;
+
+  switch (section) {
+    case 'leads':
+      APP.leads = [];
+      APP.searchResults = [];
+      APP.selectedSet.clear();
+      DB.set('leads', []);
+      document.getElementById('leadsCount').textContent = '0';
+      const sr = document.getElementById('searchResults');
+      if (sr) sr.style.display = 'none';
+      const lb = document.getElementById('leadsListBody');
+      if (lb) lb.innerHTML = '';
+      const le = document.getElementById('leadsEmpty');
+      if (le) le.style.display = 'block';
+      break;
+
+    case 'search':
+      // إعادة الفلاتر للافتراضي بدون مسح النتائج
+      const dom = document.getElementById('domainFilter');
+      if (dom) { dom.value = 'النقل واللوجستيات'; updateSectorsForDomain(); }
+      const city = document.getElementById('cityFilter');
+      if (city) city.selectedIndex = 0;
+      const tr = document.getElementById('timeRange');
+      if (tr) tr.value = 'month';
+      const sd = document.getElementById('searchDepth');
+      if (sd) sd.value = 'deep';
+      const st = document.getElementById('scoreThreshold');
+      if (st) { st.value = 40; document.getElementById('scoreVal').textContent = '40%'; }
+      const lm = document.getElementById('leadsMin');
+      if (lm) lm.value = 20;
+      break;
+
+    case 'campaigns':
+      APP.campaigns = [];
+      DB.set('campaigns', []);
+      const pc = document.getElementById('pastCampaigns');
+      if (pc) pc.innerHTML = '<div class="empty-state" style="padding:30px"><div class="icon">📭</div><p>لا توجد حملات سابقة</p></div>';
+      const cp = document.getElementById('campaignPanel');
+      if (cp) cp.style.display = 'none';
+      break;
+
+    case 'inbox':
+      APP.inbox = [];
+      DB.set('inbox', []);
+      const il = document.getElementById('inboxList');
+      if (il) il.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>تم مسح الوارد محلياً</p></div>';
+      const ic = document.getElementById('inboxCount');
+      if (ic) ic.textContent = '';
+      break;
+
+    case 'prompts':
+      delete APP.config.prompt_search;
+      delete APP.config.prompt_message;
+      delete APP.config.prompt_search_no_web;
+      DB.set('config', APP.config);
+      const ps = document.getElementById('promptSearch');
+      const pm = document.getElementById('promptMessage');
+      if (ps) ps.value = DEFAULT_PROMPTS.search;
+      if (pm) pm.value = DEFAULT_PROMPTS.message;
+      break;
+
+    case 'providers_status':
+      APP.workingProviders = {};
+      renderProviderPicker();
+      break;
+  }
+
+  showToast(`↻ تم إعادة تعيين: ${labels[section]}`, 'success');
 }
 
 // ============ DEPLOY CODE ============
@@ -1726,13 +3450,103 @@ function escapeAttr(str) {
 }
 
 // ============ INIT ============
+// ============ DOMAIN MANAGEMENT ============
+function populateDomainFilter() {
+  const domainSelect = document.getElementById('domainFilter');
+  if (!domainSelect) return;
+  const savedDomain = APP.config.selectedDomain || 'النقل واللوجستيات';
+  domainSelect.innerHTML = Object.keys(BUSINESS_DOMAINS).map(name => {
+    const d = BUSINESS_DOMAINS[name];
+    const selected = name === savedDomain ? 'selected' : '';
+    return `<option value="${escapeAttr(name)}" ${selected}>${d.icon} ${escapeHtml(name)}</option>`;
+  }).join('');
+  updateSectorsForDomain();
+}
+
+function updateSectorsForDomain() {
+  const domainSelect = document.getElementById('domainFilter');
+  const sectorSelect = document.getElementById('sectorFilter');
+  if (!domainSelect || !sectorSelect) return;
+  const domain = domainSelect.value;
+  const sectors = BUSINESS_DOMAINS[domain]?.sectors || [];
+
+  if (sectors.length === 0) {
+    // مخصص — يمكن للمستخدم إدخال نص
+    sectorSelect.innerHTML = '<option value="جميع القطاعات">🌐 جميع القطاعات</option>';
+    sectorSelect.disabled = false;
+    sectorSelect.title = 'اختر مجالاً جاهزاً أو حدّد البرومبت لمجال مخصص';
+  } else {
+    sectorSelect.disabled = false;
+    // إضافة "جميع القطاعات" كأول خيار في كل مجال
+    sectorSelect.innerHTML = '<option value="جميع القطاعات">🌐 جميع القطاعات (شامل)</option>' +
+      sectors.map(s => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+  }
+
+  // حفظ الاختيار
+  APP.config.selectedDomain = domain;
+  DB.set('config', APP.config);
+}
+
+// ============ PROMPT ENHANCER (تحسين البرومبت بالذكاء الاصطناعي) ============
+async function enhancePrompt(key) {
+  const id = key === 'search' ? 'promptSearch' : 'promptMessage';
+  const statusId = key === 'search' ? 'searchPromptStatus' : 'messagePromptStatus';
+  const currentPrompt = document.getElementById(id).value.trim();
+
+  if (!currentPrompt) {
+    document.getElementById(statusId).innerHTML = '<span style="color:var(--red)">⚠️ لا يوجد برومبت لتحسينه</span>';
+    return;
+  }
+
+  document.getElementById(statusId).innerHTML = '<span style="color:var(--cyan)">🪄 يحسّن البرومبت بالذكاء الاصطناعي...</span>';
+
+  const enhancePromptText = `أنت خبير في هندسة البرومبتات (Prompt Engineering) للذكاء الاصطناعي.
+
+البرومبت التالي يستخدم في نظام مبيعات لـ ${key === 'search' ? 'البحث عن العملاء المحتملين' : 'كتابة رسائل البريد الإلكتروني'}.
+
+== البرومبت الحالي ==
+${currentPrompt}
+
+== مهمتك ==
+حسّن هذا البرومبت ليصبح أكثر فعالية ودقة، مع الحفاظ على:
+- جميع المتغيرات بصيغة {{variable}} كما هي
+- البنية الأساسية والأقسام
+- اللغة العربية الواضحة
+- المتطلبات الإلزامية
+
+أضف:
+- توجيهات أكثر تحديداً وأمثلة عملية
+- قواعد صدق وحماية من المعلومات الوهمية
+- تحسين هيكل JSON المطلوب (إن وُجد)
+- تعليمات لجعل النتائج أكثر دقة وتفصيلاً
+
+أرجع البرومبت المحسّن **فقط** بدون أي شرح أو مقدمة أو تعليق. ابدأ مباشرة بالنص الجديد.`;
+
+  const result = await callAI(enhancePromptText, { maxTokens: 4000 });
+  if (result.ok && result.text) {
+    // إزالة أي ```markdown
+    let enhanced = result.text.trim()
+      .replace(/^```[a-z]*\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
+
+    document.getElementById(id).value = enhanced;
+    const providerName = PROVIDERS[result.provider]?.name || result.provider;
+    document.getElementById(statusId).innerHTML = `<span style="color:var(--green)">✨ تم التحسين بنجاح عبر ${escapeHtml(providerName)} — راجع التغييرات قبل الحفظ</span>`;
+    showToast('✨ تم تحسين البرومبت', 'success');
+  } else {
+    document.getElementById(statusId).innerHTML = `<span style="color:var(--red)">❌ فشل التحسين: ${escapeHtml((result.error || 'خطأ').substring(0, 80))}</span>`;
+    showToast('❌ فشل تحسين البرومبت', 'error');
+  }
+}
+
 function init() {
   APP.config = DB.get('config', {}) || {};
   APP.leads = DB.get('leads', []) || [];
   APP.inbox = DB.get('inbox', []) || [];
   APP.campaigns = DB.get('campaigns', []) || [];
 
-  const providers = ['groq', 'openrouter', 'gemini', 'mistral', 'anthropic', 'custom'];
+  const providers = ['groq', 'openrouter', 'gemini', 'mistral', 'anthropic', 'manus', 'custom'];
   for (const pid of providers) {
     const keyEl = document.getElementById('key_' + pid);
     const modelEl = document.getElementById('model_' + pid);
@@ -1743,6 +3557,8 @@ function init() {
   if (proxyEl && APP.config.key_anthropic_proxy) proxyEl.value = APP.config.key_anthropic_proxy;
   const customUrlEl = document.getElementById('key_custom_url');
   if (customUrlEl && APP.config.key_custom_url) customUrlEl.value = APP.config.key_custom_url;
+  const manusUrlEl = document.getElementById('key_manus_url');
+  if (manusUrlEl && APP.config.key_manus_url) manusUrlEl.value = APP.config.key_manus_url;
 
   if (APP.config.backendUrl) document.getElementById('backendUrl').value = APP.config.backendUrl;
   if (APP.config.senderName) document.getElementById('senderName').value = APP.config.senderName;
@@ -1773,7 +3589,37 @@ function init() {
     if (el) el.value = APP.config.waTemplateLang;
   }
 
+  // Email provider keys
+  ['resendApiKey', 'brevoApiKey', 'emailjsPublicKey', 'emailjsServiceId', 'emailjsTemplateId'].forEach(k => {
+    if (APP.config[k]) {
+      const el = document.getElementById(k);
+      if (el) el.value = APP.config[k];
+    }
+  });
+
+  // Search provider keys
+  ['tavily', 'brave', 'serpapi'].forEach(pid => {
+    if (APP.config['searchKey_' + pid]) {
+      const el = document.getElementById('searchKey_' + pid);
+      if (el) el.value = APP.config['searchKey_' + pid];
+    }
+  });
+  if (APP.config.hunterApiKey) {
+    const el = document.getElementById('hunterApiKey');
+    if (el) el.value = APP.config.hunterApiKey;
+  }
+  if (APP.config.searchProvider) {
+    document.getElementById('search_card_' + APP.config.searchProvider)?.classList.add('active');
+  }
+
+  // Highlight selected email provider
+  if (APP.config.emailProvider) {
+    const card = document.getElementById('email_card_' + APP.config.emailProvider);
+    if (card) card.classList.add('selected');
+  }
+
   refreshFavoriteUI();
+  populateDomainFilter();
 
   const hasAnyKey = providers.some(p => APP.config['key_' + p] && APP.config['key_' + p].length > 10);
   updateApiStatus(hasAnyKey);
@@ -1789,6 +3635,13 @@ window.toggleSidebar = toggleSidebar;
 window.pickProvider = pickProvider;
 window.toggleFavorite = toggleFavorite;
 window.startDeepSearch = startDeepSearch;
+window.updateSectorsForDomain = updateSectorsForDomain;
+window.enhancePrompt = enhancePrompt;
+window.BUSINESS_DOMAINS = BUSINESS_DOMAINS;
+window.testEmailProvider = testEmailProvider;
+window.saveEmailProviderKeys = saveEmailProviderKeys;
+window.selectEmailProvider = selectEmailProvider;
+window.EMAIL_PROVIDERS = EMAIL_PROVIDERS;
 window.toggleChk = toggleChk;
 window.selectAll = selectAll;
 window.sendSelected = sendSelected;
@@ -1822,7 +3675,39 @@ window.saveBackend = saveBackend;
 window.saveWA = saveWA;
 window.saveCompanyData = saveCompanyData;
 window.exportData = exportData;
+window.importData = importData;
+window.importLeadsFile = importLeadsFile;
+window.exportLeadsCSV = exportLeadsCSV;
+window.exportLeadsJSON = exportLeadsJSON;
+window.downloadCsvTemplate = downloadCsvTemplate;
+window.confirmImportLeads = confirmImportLeads;
+window.confirmImportLeadsAll = confirmImportLeadsAll;
+window.testSenderEmail = testSenderEmail;
+// Leads page enhancements
+window.changeLeadsPage = changeLeadsPage;
+window.changeLeadsPerPage = changeLeadsPerPage;
+window.leadsSearch = leadsSearch;
+window.leadsFilterByCity = leadsFilterByCity;
+window.leadsFilterByPriority = leadsFilterByPriority;
+window.leadsFilterByOrigin = leadsFilterByOrigin;
+window.clearLeadsFilters = clearLeadsFilters;
+window.toggleLeadSelect = toggleLeadSelect;
+window.selectAllVisibleLeads = selectAllVisibleLeads;
+window.selectAllFilteredLeads = selectAllFilteredLeads;
+window.deselectAllLeads = deselectAllLeads;
+window.bulkDeleteLeads = bulkDeleteLeads;
+window.bulkSendCampaign = bulkSendCampaign;
+window.bulkExportSelected = bulkExportSelected;
+window.viewLeadFromList = viewLeadFromList;
 window.clearAllData = clearAllData;
+window.resetSection = resetSection;
+window.fetchInbox = fetchInbox;
+window.toggleInboxFilter = toggleInboxFilter;
+window.SEARCH_PROVIDERS = SEARCH_PROVIDERS;
+window.hunterDomainSearch = hunterDomainSearch;
+window.testSearchProvider = testSearchProvider;
+window.selectSearchProvider = selectSearchProvider;
+window.saveHunterKey = saveHunterKey;
 window.closeModal = closeModal;
 window.copyServerCode = copyServerCode;
 window.copyPkg = copyPkg;

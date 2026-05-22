@@ -863,6 +863,149 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 .provider-card.active { border-color: var(--gold); background: var(--gold-dim); }
+
+.email-provider-card.selected {
+  border-color: var(--green) !important;
+  background: rgba(0, 224, 130, 0.06) !important;
+  box-shadow: 0 0 0 1px var(--green);
+}
+.email-provider-card.selected::after {
+  content: '✓ مفعّل';
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  background: var(--green);
+  color: #002418;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 20px;
+}
+.email-provider-card { position: relative; }
+
+/* === LEADS MANAGEMENT === */
+.leads-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+.leads-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10,26,51,0.85);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 12px;
+}
+.leads-search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.leads-search-icon { font-size: 14px; color: var(--text-dim); }
+
+.leads-filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.leads-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.lead-stat {
+  background: rgba(19,40,77,0.7);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px;
+  text-align: center;
+}
+.ls-val { font-size: 18px; font-weight: 800; color: var(--gold); line-height: 1.1; }
+.ls-lbl { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+.bulk-actions {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(202,168,77,0.12), rgba(0,207,255,0.06));
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.bulk-count {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--navy);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.leads-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(10,26,51,0.4);
+  border-radius: 10px;
+}
+.page-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 34px;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.page-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+  font-weight: 800;
+}
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.page-ellipsis {
+  color: var(--text-dim);
+  padding: 0 6px;
+}
+.page-info {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 0 8px;
+}
+@media (max-width: 600px) {
+  .leads-toolbar { grid-template-columns: 1fr; }
+  .leads-filter-row { grid-template-columns: 1fr 1fr; }
+  .page-info { width: 100%; text-align: center; margin: 8px 0 0; }
+}
 .provider-card.favorite::before {
   content: '⭐ المفضل';
   position: absolute;
@@ -1235,41 +1378,50 @@ input[type="range"]::-moz-range-thumb {
       <div id="providerPicker" style="display:flex;gap:8px;flex-wrap:wrap;flex:1"></div>
     </div>
 
-    <div class="search-grid">
+    <div class="search-grid" style="grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group" style="margin:0">
-        <label>القطاع المستهدف</label>
-        <select class="form-select" id="sectorFilter">
-          <option value="شركات البناء والمقاولات الكبرى">شركات البناء والمقاولات</option>
-          <option value="شركات النفط والغاز والحفر">شركات النفط والغاز</option>
-          <option value="الموانئ وشركات اللوجستيات">الموانئ واللوجستيات</option>
-          <option value="المصانع والشركات الصناعية الكبرى">المصانع والشركات الصناعية</option>
-          <option value="الجهات والمشاريع الحكومية">الجهات الحكومية</option>
-          <option value="شركات البنية التحتية والإنشاءات">البنية التحتية</option>
-          <option value="مستوردي ومصدري البضائع الثقيلة">الاستيراد والتصدير</option>
-          <option value="شركات تأجير المعدات الثقيلة">تأجير المعدات</option>
-          <option value="شركات الطاقة المتجددة">الطاقة المتجددة</option>
-          <option value="مشاريع نيوم والبحر الأحمر">مشاريع المملكة الكبرى</option>
+        <label>🎯 المجال الرئيسي</label>
+        <select class="form-select" id="domainFilter" onchange="updateSectorsForDomain()">
+          <!-- يُملأ ديناميكياً من JavaScript -->
         </select>
       </div>
       <div class="form-group" style="margin:0">
-        <label>المدينة / المنطقة</label>
+        <label>📂 القطاع الفرعي</label>
+        <select class="form-select" id="sectorFilter">
+          <!-- يُملأ ديناميكياً بناءً على المجال -->
+        </select>
+      </div>
+    </div>
+
+    <div class="search-grid">
+      <div class="form-group" style="margin:0">
+        <label>📍 المدينة / المنطقة</label>
         <select class="form-select" id="cityFilter">
           <option>جدة ومكة المكرمة</option>
           <option>الرياض والمنطقة الوسطى</option>
           <option>الدمام والمنطقة الشرقية</option>
           <option>المدينة المنورة</option>
           <option>تبوك ونيوم</option>
+          <option>أبها والمنطقة الجنوبية</option>
           <option>جميع مناطق المملكة</option>
         </select>
       </div>
       <div class="form-group" style="margin:0">
-        <label>الفترة الزمنية للإشارات</label>
+        <label>📅 الفترة الزمنية للإشارات</label>
         <select class="form-select" id="timeRange">
-          <option value="day">اليوم فقط 🔥</option>
-          <option value="week" selected>الأسبوع الماضي</option>
-          <option value="month">الشهر الماضي</option>
-          <option value="6months">آخر 6 أشهر</option>
-          <option value="year">آخر سنة</option>
+          <option value="day">🔥 اليوم فقط (آخر 24 ساعة)</option>
+          <option value="week">📰 الأسبوع الماضي</option>
+          <option value="month" selected>📊 الشهر الماضي</option>
+          <option value="6months">⏱️ آخر 6 أشهر (2025-2026)</option>
+          <option value="year">📆 آخر سنة (2025-2026)</option>
+          <option value="2years">🗓️ آخر سنتين (2024-2026)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>🔬 نوع البحث</label>
+        <select class="form-select" id="searchDepth">
+          <option value="deep" selected>تنقيب عميق (إشارات نية)</option>
+          <option value="standard">بحث قياسي</option>
         </select>
       </div>
     </div>
@@ -1281,15 +1433,8 @@ input[type="range"]::-moz-range-thumb {
           oninput="document.getElementById('scoreVal').textContent=this.value+'%'">
       </div>
       <div class="form-group" style="margin:0">
-        <label>عدد العملاء (10-60)</label>
+        <label>عدد العملاء المطلوب (10-60)</label>
         <input type="number" class="form-input" id="leadsMin" value="20" min="10" max="60">
-      </div>
-      <div class="form-group" style="margin:0">
-        <label>نوع البحث</label>
-        <select class="form-select" id="searchDepth">
-          <option value="deep" selected>🔬 تنقيب عميق (يبحث عن إشارات نية)</option>
-          <option value="standard">📋 بحث قياسي (شركات معروفة)</option>
-        </select>
       </div>
     </div>
 
@@ -1358,23 +1503,105 @@ input[type="range"]::-moz-range-thumb {
 <!-- LEADS -->
 <section class="page" id="page-leads">
   <div class="page-header">
-    <div class="page-title">👥 قائمة <span>العملاء المحفوظين</span></div>
-    <div class="page-sub">العملاء محفوظون محلياً — لا تُفقد عند إغلاق المتصفح</div>
+    <div class="page-title">👥 إدارة <span>قائمة العملاء</span></div>
+    <div class="page-sub">قائمتك مخزّنة محلياً · يمكنك الاستيراد، التصدير، البحث، التصفية، الإرسال الجماعي</div>
   </div>
-  <div class="filter-row">
-    <button class="filter-btn active" onclick="filterLeadsList('all',this)">الكل</button>
-    <button class="filter-btn" onclick="filterLeadsList('sent',this)">مرسل</button>
-    <button class="filter-btn" onclick="filterLeadsList('opened',this)">فُتح</button>
-    <button class="filter-btn" onclick="filterLeadsList('replied',this)">رد</button>
-    <button class="filter-btn" onclick="filterLeadsList('pending',this)">لم يُرسل</button>
+
+  <!-- ==== TOOLBAR: استيراد/تصدير ==== -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:12px">📁 استيراد وتصدير</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
+      <button class="btn-primary" onclick="importLeadsFile()" style="padding:11px;font-size:13px">
+        📤 رفع قائمة جديدة
+      </button>
+      <button class="btn-outline" onclick="downloadCsvTemplate()" style="padding:11px;font-size:13px;border-color:var(--cyan);color:var(--cyan)">
+        📋 قالب CSV فارغ
+      </button>
+      <button class="btn-outline" onclick="exportLeadsCSV()" style="padding:11px;font-size:13px;border-color:var(--green);color:var(--green)">
+        📥 تصدير CSV
+      </button>
+      <button class="btn-outline" onclick="exportLeadsJSON()" style="padding:11px;font-size:13px">
+        💾 تصدير JSON
+      </button>
+    </div>
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-size:12px;color:var(--text-dim);padding:4px 0">💡 الصيغ المدعومة وطريقة الاستخدام</summary>
+      <div class="info-box info-cyan" style="margin-top:8px">
+        <div style="line-height:1.9;font-size:12px">
+          • <b>CSV (الموصى):</b> يدعم 21 حقل (الاسم، الإيميل، الهاتف، القطاع، المدينة، hot_lead، الأولوية، احتمال التعاقد، الجنسية...). حمّل القالب لمعرفة الصيغة الكاملة<br>
+          • <b>JSON:</b> مصفوفة كائنات بنفس البنية<br>
+          • <b>TXT:</b> كل سطر إيميل أو رقم — للقوائم البسيطة<br>
+          • النظام يكتشف الأعمدة العربية والإنجليزية تلقائياً
+        </div>
+      </div>
+    </details>
   </div>
-  <div class="card" style="padding:0;overflow:hidden">
+
+  <!-- ==== الإحصاءات ==== -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:10px">📊 نظرة سريعة</div>
+    <div class="leads-stats" id="leadsStats"></div>
+  </div>
+
+  <!-- ==== البحث والتصفية ==== -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:10px">🔍 البحث والتصفية</div>
+    <div class="leads-toolbar">
+      <div class="leads-search-box">
+        <span class="leads-search-icon">🔍</span>
+        <input type="text" id="leadsSearchInput" placeholder="بحث بالاسم، الإيميل، الهاتف، القطاع..."
+          oninput="leadsSearch(this.value)">
+      </div>
+      <button class="btn-outline" onclick="clearLeadsFilters()" style="padding:8px 14px;font-size:12px">
+        ✕ مسح التصفية
+      </button>
+    </div>
+
+    <div class="leads-filter-row">
+      <select class="form-select" id="leadsCityFilter" onchange="leadsFilterByCity(this.value)" style="padding:8px 10px;font-size:12px"></select>
+      <select class="form-select" id="leadsPriorityFilter" onchange="leadsFilterByPriority(this.value)" style="padding:8px 10px;font-size:12px"></select>
+      <select class="form-select" id="leadsOriginFilter" onchange="leadsFilterByOrigin(this.value)" style="padding:8px 10px;font-size:12px"></select>
+      <select class="form-select" onchange="changeLeadsPerPage(this.value)" style="padding:8px 10px;font-size:12px">
+        <option value="25">25 لكل صفحة</option>
+        <option value="50">50 لكل صفحة</option>
+        <option value="100">100 لكل صفحة</option>
+        <option value="200">200 لكل صفحة</option>
+      </select>
+    </div>
+
+    <div class="filter-row" style="margin-bottom:0">
+      <button class="filter-btn active" data-filter="all" onclick="filterLeadsList('all',this)">الكل</button>
+      <button class="filter-btn" data-filter="hot" onclick="filterLeadsList('hot',this)">🔥 حار</button>
+      <button class="filter-btn" data-filter="sent" onclick="filterLeadsList('sent',this)">أُرسل</button>
+      <button class="filter-btn" data-filter="opened" onclick="filterLeadsList('opened',this)">فُتح</button>
+      <button class="filter-btn" data-filter="replied" onclick="filterLeadsList('replied',this)">رد</button>
+      <button class="filter-btn" data-filter="pending" onclick="filterLeadsList('pending',this)">لم يُرسل</button>
+    </div>
+  </div>
+
+  <!-- ==== الإجراءات الجماعية ==== -->
+  <div class="bulk-actions" id="bulkActions">
+    <span style="font-size:13px;font-weight:700">المحدد: <span class="bulk-count">0</span></span>
+    <button class="btn-sm btn-view" onclick="bulkSendCampaign()">🚀 إرسال حملة</button>
+    <button class="btn-sm" onclick="bulkExportSelected()" style="background:rgba(0,224,130,0.1);color:var(--green);border:1px solid rgba(0,224,130,0.3);padding:6px 12px;border-radius:7px">📥 تصدير المحدد</button>
+    <button class="btn-sm btn-danger" onclick="bulkDeleteLeads()">🗑️ حذف المحدد</button>
+    <button class="btn-sm btn-outline" onclick="deselectAllLeads()" style="padding:6px 12px">إلغاء التحديد</button>
+  </div>
+
+  <!-- ==== جدول العملاء ==== -->
+  <div class="card leads-table-wrap" style="padding:0;overflow:hidden">
+    <div style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+      <button class="btn-sm btn-outline" onclick="selectAllVisibleLeads()" style="padding:6px 12px;font-size:12px">☑️ تحديد الصفحة</button>
+      <button class="btn-sm btn-outline" onclick="selectAllFilteredLeads()" style="padding:6px 12px;font-size:12px">☑️ تحديد الكل المُصفّى</button>
+    </div>
     <div class="table-wrap">
       <table class="leads-table">
         <thead><tr>
-          <th style="padding:14px 12px">الشركة</th>
-          <th>القطاع</th>
+          <th style="padding:12px;width:32px"></th>
+          <th>الشركة</th>
+          <th>القطاع/المدينة</th>
           <th>التواصل</th>
+          <th>الأولوية</th>
           <th>روابط</th>
           <th>الاهتمام</th>
           <th>الحالة</th>
@@ -1385,9 +1612,16 @@ input[type="range"]::-moz-range-thumb {
     </div>
     <div id="leadsEmpty" class="empty-state">
       <div class="icon">👥</div>
-      <p>لا يوجد عملاء بعد — ابدأ بالتنقيب الذكي</p>
+      <p>لا يوجد عملاء بعد</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="openPage('search')">🔍 ابدأ التنقيب</button>
+        <button class="btn-outline" onclick="importLeadsFile()">📤 أو رفع قائمة موجودة</button>
+      </div>
     </div>
   </div>
+
+  <!-- ==== الترقيم ==== -->
+  <div class="leads-pagination" id="leadsPagination"></div>
 </section>
 
 <!-- COMPOSE -->
@@ -1641,6 +1875,7 @@ input[type="range"]::-moz-range-thumb {
     <div class="ib-title">💡 المتغيرات الديناميكية</div>
     <div>استخدم هذه المتغيرات داخل البرومبت وسيتم استبدالها تلقائياً عند البحث:</div>
     <div class="prompt-toolbar" style="margin-top:10px">
+      <span class="prompt-token" onclick="insertToken('SEARCH','{{domain}}')">{{domain}}</span>
       <span class="prompt-token" onclick="insertToken('SEARCH','{{sector}}')">{{sector}}</span>
       <span class="prompt-token" onclick="insertToken('SEARCH','{{city}}')">{{city}}</span>
       <span class="prompt-token" onclick="insertToken('SEARCH','{{count}}')">{{count}}</span>
@@ -1654,8 +1889,9 @@ input[type="range"]::-moz-range-thumb {
   <div class="card">
     <div class="card-header">
       <div class="card-title">🔍 برومبت <span>التنقيب العميق</span></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-sm btn-outline" onclick="resetPrompt('search')">↻ افتراضي</button>
+        <button class="btn-sm" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(0,207,255,0.2));color:#c4a8ff;border:1px solid rgba(168,85,247,0.4);padding:6px 12px;border-radius:7px;font-weight:600" onclick="enhancePrompt('search')">🪄 تحسين بالـ AI</button>
         <button class="btn-sm btn-view" onclick="savePrompt('search')">💾 حفظ</button>
       </div>
     </div>
@@ -1666,8 +1902,9 @@ input[type="range"]::-moz-range-thumb {
   <div class="card">
     <div class="card-header">
       <div class="card-title">✍️ برومبت <span>كتابة الرسائل</span></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-sm btn-outline" onclick="resetPrompt('message')">↻ افتراضي</button>
+        <button class="btn-sm" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(0,207,255,0.2));color:#c4a8ff;border:1px solid rgba(168,85,247,0.4);padding:6px 12px;border-radius:7px;font-weight:600" onclick="enhancePrompt('message')">🪄 تحسين بالـ AI</button>
         <button class="btn-sm btn-view" onclick="savePrompt('message')">💾 حفظ</button>
       </div>
     </div>
@@ -1882,6 +2119,42 @@ input[type="range"]::-moz-range-thumb {
       <div id="status_anthropic" style="margin-top:10px;font-size:12px"></div>
     </div>
 
+    <!-- MANUS AI -->
+    <div class="provider-card" data-provider="manus" id="card_manus">
+      <div class="provider-header">
+        <div class="provider-name">
+          <div class="provider-icon">🤖</div>
+          <div>
+            <div>Manus AI</div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:400">وكيل AI متقدم · يدعم تنفيذ المهام المعقدة</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="provider-badge cors">OpenAI-compatible</span>
+          <button class="btn-fav" onclick="toggleFavorite('manus')" id="fav_manus">⭐</button>
+        </div>
+      </div>
+      <div class="api-key-row">
+        <div class="form-group">
+          <label>API Key</label>
+          <input class="form-input" id="key_manus" type="password" placeholder="مفتاح Manus" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testProvider('manus')">🔌 اختبار</button>
+      </div>
+      <div class="form-group" style="margin-top:10px;margin-bottom:0">
+        <label>الموديل</label>
+        <input class="form-input" id="model_manus" placeholder="manus-default" style="direction:ltr">
+      </div>
+      <div class="form-group" style="margin-top:10px;margin-bottom:0">
+        <label>Base URL (اختياري — افتراضياً https://api.manus.im/v1)</label>
+        <input class="form-input" id="key_manus_url" placeholder="https://api.manus.im/v1" style="direction:ltr">
+      </div>
+      <div id="status_manus" style="margin-top:10px;font-size:12px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-dim);background:rgba(0,207,255,0.05);padding:8px;border-radius:6px;line-height:1.7">
+        💡 Manus AI يدعم تنسيق OpenAI الموحّد. إن لم تكن بياناتك صحيحة، استخدم تبويب "Custom" مع رابط Base URL الفعلي.
+      </div>
+    </div>
+
     <!-- CUSTOM -->
     <div class="provider-card" data-provider="custom" id="card_custom">
       <div class="provider-header">
@@ -1916,16 +2189,262 @@ input[type="range"]::-moz-range-thumb {
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:6px">📧 الخادم الخلفي (للإرسال الفعلي)</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">رابط خادم Node.js للإرسال الفعلي وتتبع الفتح واستقبال الردود</div>
-    <div class="form-group">
-      <label>عنوان الخادم</label>
-      <input class="form-input" id="backendUrl" placeholder="https://your-server.onrender.com" style="direction:ltr">
+    <div class="card-title" style="margin-bottom:6px">🌐 بحث الويب الحقيقي (للبيانات الموثّقة)</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
+      الذكاء الاصطناعي وحده لا يستطيع جلب إيميلات وأرقام حقيقية — يحتاج <b style="color:var(--gold)">بحث ويب فعلي</b>.
+      أضف مفتاح واحد على الأقل لتحصل على بيانات موثّقة من الإنترنت.
     </div>
-    <div class="form-group"><label>اسم المرسل</label><input class="form-input" id="senderName" value="شركة محمد للنقليات - MTC"></div>
-    <div class="form-group"><label>بريد الإرسال</label><input class="form-input" id="senderEmail" value="alhasanim194@gmail.com" style="direction:ltr"></div>
-    <button class="btn-primary" onclick="saveBackend()">💾 حفظ واختبار</button>
-    <div id="backendStatus" style="margin-top:10px;font-size:12px"></div>
+
+    <!-- TAVILY -->
+    <div class="provider-card" id="search_card_tavily">
+      <div class="provider-header">
+        <div class="provider-name">
+          <div class="provider-icon">🔭</div>
+          <div>
+            <div>Tavily</div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:400">1000 بحث مجاناً شهرياً · بحث AI ذكي</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectSearchProvider('tavily')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 12px;border-radius:7px">✓ اختر</button>
+      </div>
+      <div class="api-key-row">
+        <div class="form-group">
+          <label>API Key (يبدأ بـ tvly-)</label>
+          <input class="form-input" id="searchKey_tavily" type="password" placeholder="tvly-xxxxxxxxxxxx" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testSearchProvider('tavily')">🔌 اختبار</button>
+      </div>
+      <div id="status_search_tavily" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+        💡 سجّل في <a href="https://app.tavily.com/sign-up" target="_blank" style="color:var(--cyan)">app.tavily.com</a> → API Keys
+        <br>⚠️ إذا كان موقع التسجيل لا يستجيب، جرّب <a href="https://status.tavily.com/" target="_blank" style="color:var(--cyan)">status.tavily.com</a> أو استخدم Serper.dev
+      </div>
+    </div>
+
+    <!-- SERPER.DEV -->
+    <div class="provider-card" id="search_card_serper">
+      <div class="provider-header">
+        <div class="provider-name">
+          <div class="provider-icon">⚡</div>
+          <div>
+            <div>Serper.dev <span style="color:var(--green);font-size:11px">⭐ بديل ممتاز</span></div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:400">2500 بحث مجاناً مرة واحدة · سريع جداً · Google نتائج</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectSearchProvider('serper')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 12px;border-radius:7px">✓ اختر</button>
+      </div>
+      <div class="api-key-row">
+        <div class="form-group">
+          <label>API Key (من serper.dev)</label>
+          <input class="form-input" id="searchKey_serper" type="password" placeholder="مفتاحك من serper.dev" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testSearchProvider('serper')">🔌 اختبار</button>
+      </div>
+      <div id="status_search_serper" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+        💡 سجّل في <a href="https://serper.dev/signup" target="_blank" style="color:var(--cyan)">serper.dev/signup</a> → API Keys → انسخ المفتاح (يعمل CORS من المتصفح مباشرة)
+      </div>
+    </div>
+
+    <!-- SERPAPI -->
+    <div class="provider-card" id="search_card_serpapi">
+      <div class="provider-header">
+        <div class="provider-name">
+          <div class="provider-icon">🔍</div>
+          <div>
+            <div>SerpAPI (Google) <span style="color:var(--orange);font-size:11px">⚠️ قد لا يعمل من المتصفح</span></div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:400">100 بحث مجاناً شهرياً · لا يدعم CORS مباشرة</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectSearchProvider('serpapi')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 12px;border-radius:7px">✓ اختر</button>
+      </div>
+      <div class="api-key-row">
+        <div class="form-group">
+          <label>API Key</label>
+          <input class="form-input" id="searchKey_serpapi" type="password" placeholder="مفتاح SerpAPI" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testSearchProvider('serpapi')">🔌 اختبار</button>
+      </div>
+      <div id="status_search_serpapi" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--orange);background:rgba(255,154,60,0.08);padding:8px;border-radius:6px;line-height:1.7">
+        ⚠️ <b>تنبيه:</b> SerpAPI لا يدعم الاتصال المباشر من المتصفح بسبب CORS. سنحاول عبر بروكسي عام، لكنه قد يكون بطيئاً أو يفشل أحياناً.
+        <br><b>الأفضل استخدام Serper.dev</b> الذي يدعم CORS رسمياً ويعطي 2500 بحث مجاناً.
+      </div>
+    </div>
+
+    <!-- HUNTER.IO -->
+    <div class="provider-card" style="border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.04)">
+      <div class="provider-header">
+        <div class="provider-name">
+          <div class="provider-icon">📧</div>
+          <div>
+            <div>Hunter.io <span style="color:#c4a8ff;font-size:11px">للإيميلات المؤكدة</span></div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:400">25 طلب مجاناً شهرياً · يستخرج إيميلات الموظفين</div>
+          </div>
+        </div>
+      </div>
+      <div class="api-key-row">
+        <div class="form-group">
+          <label>Hunter API Key</label>
+          <input class="form-input" id="hunterApiKey" type="password" placeholder="من hunter.io/api-keys" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="saveHunterKey()">💾 حفظ</button>
+      </div>
+      <div id="status_hunter" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+        💡 يعمل تلقائياً مع البحث — يتحقق من إيميلات أول 5 عملاء
+      </div>
+    </div>
+
+    <div class="info-box info-green" style="margin-top:10px">
+      <div class="ib-title">🎯 كيف يعمل البحث الحقيقي؟</div>
+      <div style="line-height:1.9">
+        1️⃣ <b>Tavily/Brave/SerpAPI</b> يبحث على Google والمواقع الحقيقية<br>
+        2️⃣ يجلب نتائج فعلية (روابط، مقتطفات، تواريخ)<br>
+        3️⃣ يُرسلها للذكاء الاصطناعي ليُحوّلها لقائمة عملاء<br>
+        4️⃣ <b>Hunter</b> يبحث عن إيميلات الموظفين الفعلية في نطاق كل شركة<br>
+        ✅ النتيجة: بيانات موثّقة بمصادرها بدلاً من البيانات المخترعة
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px">📧 إرسال البريد — اختر مزوداً واحداً</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
+      جرّب أحد المزودات أدناه — كلها <b style="color:var(--green)">تعمل مباشرة من المتصفح</b> وتتجنب حظر Gmail
+    </div>
+
+    <div class="form-group">
+      <label>📤 اسم المرسل الظاهر</label>
+      <input class="form-input" id="senderName" placeholder="شركة محمد للنقليات - MTC">
+    </div>
+    <div class="form-group">
+      <label>✉️ بريد المرسل (يستخدم في الإرسال)</label>
+      <input class="form-input" id="senderEmail" placeholder="email@example.com" style="direction:ltr">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <button class="btn-primary" onclick="saveBackend()" style="flex:1;min-width:140px">💾 حفظ بيانات المرسل</button>
+      <button class="btn-outline" onclick="testSenderEmail()" style="flex:1;min-width:140px;border-color:var(--green);color:var(--green)">✉️ اختبار: أرسل لنفسك</button>
+    </div>
+    <div id="backendStatus" style="margin-bottom:14px;font-size:12px"></div>
+
+    <!-- ===== RESEND ===== -->
+    <div class="email-provider-card" id="email_card_resend" style="background:rgba(10,26,51,0.6);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;transition:all 0.2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--navy-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">📨</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">Resend <span style="color:var(--green);font-size:11px">⭐ موصى به</span></div>
+            <div style="font-size:11px;color:var(--text-dim)">3000 رسالة مجاناً شهرياً · لا حظر · تسليم فوري</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectEmailProvider('resend')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 14px;border-radius:7px">✓ اختر هذا</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0">
+          <label>API Key (يبدأ بـ re_)</label>
+          <input class="form-input" id="resendApiKey" type="password" placeholder="re_xxxxxxxxxxxxxx" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testEmailProvider('resend')" style="padding:10px 14px">🔌 اختبار</button>
+      </div>
+      <div id="status_email_resend" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-dim);line-height:1.7">
+        💡 <b>للحصول على المفتاح:</b> اذهب إلى
+        <a href="https://resend.com/signup" target="_blank" style="color:var(--cyan)">resend.com/signup</a>
+        → سجّل بـ Google → API Keys → Create API Key
+      </div>
+    </div>
+
+    <!-- ===== BREVO ===== -->
+    <div class="email-provider-card" id="email_card_brevo" style="background:rgba(10,26,51,0.6);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;transition:all 0.2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--navy-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🦊</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">Brevo (Sendinblue سابقاً)</div>
+            <div style="font-size:11px;color:var(--text-dim)">300 رسالة يومياً مجاناً · موثوق للعربية</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectEmailProvider('brevo')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 14px;border-radius:7px">✓ اختر هذا</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0">
+          <label>API Key (يبدأ بـ xkeysib-)</label>
+          <input class="form-input" id="brevoApiKey" type="password" placeholder="xkeysib-xxxxxxxxxxxxxxxx" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testEmailProvider('brevo')" style="padding:10px 14px">🔌 اختبار</button>
+      </div>
+      <div id="status_email_brevo" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-dim);line-height:1.7">
+        💡 <b>للحصول على المفتاح:</b>
+        <a href="https://www.brevo.com/free-account/" target="_blank" style="color:var(--cyan)">brevo.com</a>
+        → سجّل → SMTP & API → API Keys → Generate
+      </div>
+    </div>
+
+    <!-- ===== EMAILJS ===== -->
+    <div class="email-provider-card" id="email_card_emailjs" style="background:rgba(10,26,51,0.6);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;transition:all 0.2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--navy-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">EmailJS</div>
+            <div style="font-size:11px;color:var(--text-dim)">200 رسالة شهرياً مجاناً · لا يحتاج خادم</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectEmailProvider('emailjs')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 14px;border-radius:7px">✓ اختر هذا</button>
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Public Key</label>
+        <input class="form-input" id="emailjsPublicKey" placeholder="مثال: user_xxxxxxxx" style="direction:ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Service ID</label>
+        <input class="form-input" id="emailjsServiceId" placeholder="مثال: service_xxxxxxxx" style="direction:ltr">
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0">
+          <label>Template ID</label>
+          <input class="form-input" id="emailjsTemplateId" placeholder="مثال: template_xxxxxxxx" style="direction:ltr">
+        </div>
+        <button class="btn-sm btn-view" onclick="testEmailProvider('emailjs')" style="padding:10px 14px">🔌 اختبار</button>
+      </div>
+      <div id="status_email_emailjs" style="margin-top:8px;font-size:12px"></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-dim);line-height:1.7">
+        💡 <b>الإعداد:</b>
+        <a href="https://dashboard.emailjs.com/sign-up" target="_blank" style="color:var(--cyan)">سجّل في EmailJS</a>
+        → اربط Gmail الخاص بك → أنشئ Service و Template → انسخ الـ 3 معرّفات
+      </div>
+    </div>
+
+    <!-- ===== BACKEND (الطريقة القديمة) ===== -->
+    <div class="email-provider-card" id="email_card_backend" style="background:rgba(10,26,51,0.6);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;transition:all 0.2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--navy-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🖥️</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">الخادم الخلفي (Gmail)</div>
+            <div style="font-size:11px;color:var(--text-dim)">للذين عندهم خادم Render — قد يواجه حظر</div>
+          </div>
+        </div>
+        <button class="btn-sm" onclick="selectEmailProvider('backend')" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);padding:6px 14px;border-radius:7px">✓ اختر هذا</button>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>عنوان الخادم</label>
+        <input class="form-input" id="backendUrl" placeholder="https://your-server.onrender.com" style="direction:ltr">
+      </div>
+    </div>
+
+    <div class="info-box info-green" style="margin-top:6px">
+      <div class="ib-title">🎯 ملخص سريع</div>
+      <div style="line-height:1.9">
+        1️⃣ سجّل في <b>Resend</b> (دقيقتين)<br>
+        2️⃣ انسخ API Key والصقه أعلاه<br>
+        3️⃣ اضغط <b>"🔌 اختبار"</b> — ستصلك رسالة تجريبية على بريدك<br>
+        4️⃣ عند النجاح، اضغط <b>"✓ اختر هذا"</b><br>
+        ✅ تم! الآن يمكنك الإرسال للعملاء مباشرة من الموقع
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -2013,11 +2532,41 @@ input[type="range"]::-moz-range-thumb {
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:14px">🗑️ إدارة البيانات</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn-outline" onclick="exportData()">📥 تصدير كل البيانات</button>
-      <button class="btn-sm btn-danger" style="padding:9px 16px" onclick="clearAllData()">🗑️ مسح كل شيء</button>
+    <div class="card-title" style="margin-bottom:14px">💾 النسخ الاحتياطي والاستعادة</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
+      احفظ نسخة من كل بياناتك (المفاتيح + العملاء + الحملات) أو استعدها على متصفح آخر
     </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="exportData()">📥 تصدير نسخة احتياطية (JSON)</button>
+      <button class="btn-outline" onclick="importData()">📤 استيراد نسخة محفوظة</button>
+    </div>
+    <div class="info-box info-cyan" style="margin-top:14px">
+      <div class="ib-title">💡 نصيحة</div>
+      <div>صدّر نسخة احتياطية كل أسبوع. كل المفاتيح والبيانات مشفّرة محلياً في متصفحك فقط.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">↻ إعادة تعيين أقسام محددة</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
+      مسح بيانات قسم معين دون فقدان الإعدادات والمفاتيح
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
+      <button class="btn-outline" onclick="resetSection('leads')" style="font-size:12px;padding:10px">↻ قائمة العملاء</button>
+      <button class="btn-outline" onclick="resetSection('search')" style="font-size:12px;padding:10px">↻ فلاتر البحث</button>
+      <button class="btn-outline" onclick="resetSection('campaigns')" style="font-size:12px;padding:10px">↻ الحملات السابقة</button>
+      <button class="btn-outline" onclick="resetSection('inbox')" style="font-size:12px;padding:10px">↻ صندوق الوارد</button>
+      <button class="btn-outline" onclick="resetSection('prompts')" style="font-size:12px;padding:10px">↻ البرومبتات للافتراضي</button>
+      <button class="btn-outline" onclick="resetSection('providers_status')" style="font-size:12px;padding:10px">↻ حالة المزودين</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">🗑️ منطقة الخطر</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
+      هذا الإجراء يمسح كل شيء: المفاتيح، الإعدادات، العملاء، الحملات — لا تراجع!
+    </div>
+    <button class="btn-sm btn-danger" style="padding:10px 18px" onclick="clearAllData()">🗑️ مسح كل البيانات والمفاتيح</button>
   </div>
 </section>
 
